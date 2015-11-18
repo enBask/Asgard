@@ -37,7 +37,7 @@ namespace Asgard
         }
     }
 
-    public class ServerConnection : Connection
+    public class BifrostServer : Connection, ISystem
     {
         #region delegates
         public delegate void OnConnectedHandler(NetConnection connection);
@@ -69,7 +69,7 @@ namespace Asgard
         #endregion
 
         #region ctors
-        public ServerConnection(int port, int maxconnections)
+        public BifrostServer(int port, int maxconnections)
         {
             NetPeerConfiguration config = new NetPeerConfiguration("Asgard.Server");
             config.Port = port;
@@ -85,6 +85,11 @@ namespace Asgard
             RegisterPacketCallbacks();
         }
         #endregion
+
+        public void Tick(double delta)
+        {
+
+        }
 
 
         private void OnRaiseConnectedEvent(NetConnection connection)

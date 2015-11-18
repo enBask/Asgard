@@ -9,8 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Unit Tests", "Unit Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asgard.Server.Tests", "Asgard.Server.Tests\Asgard.Server.Tests.csproj", "{BDC9130D-6008-4677-82B4-58294C27DA76}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestConsoleServer", "TestConsoleServer\TestConsoleServer.csproj", "{9A880253-5D76-40BB-B6AD-87F4D91F12A7}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test Harness", "Test Harness", "{A97A89E9-3387-4B07-9C0C-909F0AA9BE09}"
 EndProject
 Global
@@ -27,16 +25,11 @@ Global
 		{BDC9130D-6008-4677-82B4-58294C27DA76}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDC9130D-6008-4677-82B4-58294C27DA76}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDC9130D-6008-4677-82B4-58294C27DA76}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9A880253-5D76-40BB-B6AD-87F4D91F12A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9A880253-5D76-40BB-B6AD-87F4D91F12A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9A880253-5D76-40BB-B6AD-87F4D91F12A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9A880253-5D76-40BB-B6AD-87F4D91F12A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BDC9130D-6008-4677-82B4-58294C27DA76} = {A2B13F5E-8DB2-478D-A6C9-CC07C32FAA63}
-		{9A880253-5D76-40BB-B6AD-87F4D91F12A7} = {A97A89E9-3387-4B07-9C0C-909F0AA9BE09}
 	EndGlobalSection
 EndGlobal

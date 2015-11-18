@@ -47,14 +47,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bootstrap.cs" />
-    <Compile Include="Connection.cs" />
-    <Compile Include="Packets\Login.Packet.cs" />
-    <Compile Include="Packets\Packet.cs" />
-    <Compile Include="Packets\PacketAttribute.cs" />
-    <Compile Include="Packets\PacketFactory.cs" />
-    <Compile Include="Packets\PacketTypes.Internal.cs" />
-    <Compile Include="Player.cs" />
+    <Compile Include="AsgardServer.cs" />
+    <Compile Include="ISystem.cs" />
+    <Compile Include="Network\Bootstrap.cs" />
+    <Compile Include="Network\Connection.cs" />
+    <Compile Include="Network\NetConfig.cs" />
+    <Compile Include="Network\Packets\Login.Packet.cs" />
+    <Compile Include="Network\Packets\Packet.cs" />
+    <Compile Include="Network\Packets\PacketAttribute.cs" />
+    <Compile Include="Network\Packets\PacketFactory.cs" />
+    <Compile Include="Network\Packets\PacketTypes.Internal.cs" />
+    <Compile Include="Network\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\Config.cs" />
     <Compile Include="Utils\PacketTypeScanner.cs" />
