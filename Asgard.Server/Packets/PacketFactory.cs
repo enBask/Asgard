@@ -1,4 +1,5 @@
 ﻿using Asgard.Packets;
+using Lidgren.Network;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,8 +11,17 @@ namespace Asgard
 {
     public class PacketFactory
     {
-        private static ConcurrentDictionary<ushort, Type> _PacketLookup =
-            new ConcurrentDictionary<ushort, Type>();
+        public class PacketData
+        {
+            public ushort Id { get; set;}
+            public NetDeliveryMethod Method { get; set; }
+            public Type PacketType { get; set; }
+        }
+
+
+        private const ushort maxInternalPacketId = (ushort)PacketTypes.MAX_PACKET;
+        private static ConcurrentDictionary<ushort, PacketData> _PacketLookup =
+            new ConcurrentDictionary<ushort, PacketData>();
 
         private static ConcurrentDictionary<Type, ushort> _PacketReverseLookup =
             new ConcurrentDictionary<Type, ushort>();
@@ -19,26 +29,44 @@ namespace Asgard
         private static ConcurrentDictionary<ushort, List<Action<IPacket>>> _PacketCallback =
             new ConcurrentDictionary<ushort, List<Action<IPacket>>>();
 
-
-        private static ushort _nextPacketId = 1;
-
-        public static void AddPacketType<T>()
+  
+        public static void AddPacketType<T>(ushort packetId, NetDeliveryMethod method)
         {
-            _PacketLookup.TryAdd(_nextPacketId, typeof(T));
-            _PacketReverseLookup.TryAdd(typeof(T), _nextPacketId++);
+            AddPacketType(typeof(T), packetId, method);
+        }
+
+        public static void AddPacketType(Type packetType, ushort packetId, NetDeliveryMethod method)
+        {
+            if (packetId <= maxInternalPacketId)
+            {
+                throw new ArgumentException("packet id falls in reserved range.");
+            }
+            if (_PacketLookup.ContainsKey(packetId))
+            {
+                throw new ArgumentException("packet id in use");
+            }
+
+            PacketData pdata = new PacketData()
+            {
+                Id = packetId,
+                Method = method,
+                PacketType = packetType
+            };
+
+            _PacketLookup.TryAdd(packetId, pdata);
+            _PacketReverseLookup.TryAdd(packetType, packetId);
         }
         
-        public static Type GetPacketType(ushort packetId)
+        public static PacketData GetPacketType(ushort packetId)
         {
-            Type packetType;
-            if (_PacketLookup.TryGetValue(packetId, out packetType))
+            PacketData pdata;
+            if (_PacketLookup.TryGetValue(packetId, out pdata))
             {
-                return packetType;
+                return pdata;
             }
             else
             {
-                //TODO
-                return typeof(Packet);
+                return null;
             }
         }
 

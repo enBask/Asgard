@@ -9,7 +9,6 @@ namespace Asgard
 {
     public class Player
     {
-        private double _lastPacketTime;
 
         public NetConnection Connection { get; private set; }
         public ushort Id { get; private set; }
@@ -24,18 +23,6 @@ namespace Asgard
         {
             Connection = connection;
         }
-
-        public void UpdateStaleState(double packetTime)
-        {
-            _lastPacketTime = packetTime;
-        }
-        
-        public bool IsStale(double range=30.0)
-        {
-            var diff = NetTime.Now - _lastPacketTime;
-            return (diff >= range);
-        }
- 
             
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Asgard.Packets;
+using Asgard.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,9 +17,7 @@ namespace Asgard
 
         private static void InitPacketTypes()
         {
-            PacketFactory.AddPacketType<ConnectRequestPacket>();
-            PacketFactory.AddPacketType<ConnectResponsePacket>();
-            PacketFactory.AddPacketType<LoginResponsePacket>();
+            PacketTypeScanner.BuildPacketTypes();
         }
     }
 }

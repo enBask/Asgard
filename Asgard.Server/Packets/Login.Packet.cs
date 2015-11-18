@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Lidgren.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,13 +12,14 @@ namespace Asgard.Packets
         public bool IsValid { get; protected set; }
     }
 
+    [Packet((ushort)PacketTypes.LOGIN_RESPONSE, NetDeliveryMethod.ReliableUnordered)]
     public class LoginResponsePacket : Packet
     {
-        public override void OnReceiveMessage()
+        public override void Deserialize(NetIncomingMessage msg)
         {
         }
 
-        public override void OnSendMessage()
+        public override void Serialize(NetOutgoingMessage msg)
         {
         }
     }

@@ -28,7 +28,7 @@ namespace Asgard
         public bool Send(Packet packet, NetConnection sendTo, int channel=0)
         {
             var msg = packet.SendMessage(this);
-            NetSendResult result = Peer.SendMessage(msg, sendTo, packet.DeliveryMethod, channel);
+            NetSendResult result = Peer.SendMessage(msg, sendTo, packet.Method, channel);
 
             if (result == NetSendResult.Queued || result == NetSendResult.Sent)
                 return true;
@@ -39,14 +39,26 @@ namespace Asgard
 
     public class ServerConnection : Connection
     {
+        #region delegates
+        public delegate void OnConnectedHandler(NetConnection connection);
+        public delegate void OnDisconnectHandler(NetConnection connection);
+        #endregion
+
+        #region public events
+        public event OnConnectedHandler OnConnection;
+        public event OnDisconnectHandler OnDisconnect;
+        #endregion
+
+        #region private vars
         private NetServer _serverInstance;
         private volatile bool _running = false;
         private Thread _networkThread;
 
         private ConcurrentDictionary<ushort, Player> _Players = new ConcurrentDictionary<ushort, Player>();
         private ConcurrentDictionary<NetConnection, Player> _PlayerByConnection = new ConcurrentDictionary<NetConnection, Player>();
+        #endregion
 
-
+        #region Properties
         public override NetPeer Peer
         {
             get
@@ -54,35 +66,102 @@ namespace Asgard
                 return _serverInstance as NetPeer;
             }         
         }
+        #endregion
 
-        public ServerConnection(int port)
+        #region ctors
+        public ServerConnection(int port, int maxconnections)
         {
             NetPeerConfiguration config = new NetPeerConfiguration("Asgard.Server");
             config.Port = port;
+            config.MaximumConnections = maxconnections;
+
+            config.AcceptIncomingConnections = true;
+            config.AutoExpandMTU = true;
+            config.AutoFlushSendQueue = true;
+            config.UseMessageRecycling = true;
+
             _serverInstance = new NetServer(config);
 
             RegisterPacketCallbacks();
         }
+        #endregion
+
+
+        private void OnRaiseConnectedEvent(NetConnection connection)
+        {
+            if (OnConnection == null) return;
+
+
+            List<Exception> exceptions = null;
+
+            var handlers = OnConnection.GetInvocationList();
+            foreach(OnConnectedHandler handler in handlers)
+            {
+                try
+                {
+                    handler(connection);
+                }
+                catch(Exception e)
+                {
+                    if (exceptions == null)
+                    {
+                        exceptions = new List<Exception>();
+                    }
+                    exceptions.Add(e);
+                    //TODO: log error maybe fail after all called.
+                }
+            }
+
+            if (exceptions != null)
+            {
+                throw new AggregateException("handler error", exceptions);
+            }
+
+            return;
+        }
+
+        private void OnRaiseDisconnectedEvent(NetConnection connection)
+        {
+            if (OnDisconnect == null) return;
+
+            List<Exception> exceptions = null;
+
+            var handlers = OnDisconnect.GetInvocationList();
+            foreach (OnDisconnectHandler handler in handlers)
+            {
+                try
+                {
+                    handler(connection);
+                }
+                catch (Exception e)
+                {
+                    if (exceptions == null)
+                    {
+                        exceptions = new List<Exception>();
+                    }
+                    exceptions.Add(e);
+                    //TODO: log error maybe fail after all called.
+                }
+            }
+
+            if (exceptions != null)
+            {
+                throw new AggregateException("handler error", exceptions);
+            }
+
+            //remove player tied to connection.
+            var player = FindPlayerByConnection(connection);
+            if (player != null)
+            {
+                RemovePlayer(player);
+            }
+
+            return;
+        }
 
         private void RegisterPacketCallbacks()
         {
-            PacketFactory.AddCallback<ConnectRequestPacket>(OnConnectRequest);
-        }
-
-        private void OnConnectRequest(ConnectRequestPacket packet)
-        {
-            if (packet.IsValid)
-            {
-                var responsePacket = new ConnectResponsePacket();
-                responsePacket.Status = true;
-                Send(responsePacket, packet.Connection);
-            }
-            else
-            {
-                //TODO
-                packet.Connection.Disconnect("");
-            }
-        }
+        }        
 
         #region Connection setup
         public bool Start()
@@ -144,18 +223,22 @@ namespace Asgard
                     case NetIncomingMessageType.ErrorMessage:
                         //log
                         break;
+                    case NetIncomingMessageType.StatusChanged:
+                        NetConnectionStatus status = (NetConnectionStatus)message.ReadByte();
+                        switch(status)
+                        {
+                            case NetConnectionStatus.Connected:
+
+                                break;
+                            case NetConnectionStatus.Disconnected:
+                                break;
+                        }
+                        break;
                     case NetIncomingMessageType.Data:
                         var packet = Packet.Get(message);
                         packet.Connection = message.SenderConnection;
                         packet.ReceiveTime = message.ReceiveTime;
-
-                        //handle player stale flags
-                        var player = FindPlayerByConnection(message.SenderConnection);
-                        if (player != null)
-                        {
-                            player.UpdateStaleState(message.ReceiveTime);
-                        }
-
+                       
                         PacketFactory.RaiseCallbacks(packet);
 
                         break;
@@ -215,17 +298,6 @@ namespace Asgard
             Player player = null;
             _PlayerByConnection.TryGetValue(connection, out player);
             return player;
-        }
-        public void CheckStalePlayers()
-        {
-            List<Player> players = _Players.Values.ToList();
-            foreach(var player in players)
-            {
-                if (player.IsStale())
-                {
-                    RemovePlayer(player);
-                }
-            }
         }
         #endregion
     }

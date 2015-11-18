@@ -16,12 +16,11 @@ namespace TestConsoleServer
         static void Main(string[] args)
         {
             int port = Config.GetInt("port");
+            int max_connections = Config.GetInt("max_connections");
             Console.WriteLine("Starting server up on port : {0}", port);
 
-            _server = new ServerConnection(port);
+            _server = new ServerConnection(port, max_connections);
 
-
-            PacketFactory.AddPacketType<MyLoginPacket>();
             PacketFactory.AddCallback<MyLoginPacket>(OnLogin);
 
             _server.Start();          
@@ -29,7 +28,6 @@ namespace TestConsoleServer
             while(true)
             {
                 Thread.Sleep(100);
-                _server.CheckStalePlayers();
             }
         }
 
