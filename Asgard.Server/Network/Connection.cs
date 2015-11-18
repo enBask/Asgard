@@ -1,4 +1,5 @@
-﻿using Asgard.Packets;
+﻿using Asgard.Network;
+using Asgard.Packets;
 using Lidgren.Network;
 using System;
 using System.Collections.Concurrent;
@@ -26,10 +27,10 @@ namespace Asgard
         public virtual NetPeer Peer {get;}
 
 
-        public bool Send(Packet packet, NetConnection sendTo, int channel=0)
+        public bool Send(Packet packet, NetNode sendTo, int channel=0)
         {
             var msg = packet.SendMessage(this);
-            NetSendResult result = Peer.SendMessage(msg, sendTo, packet.Method, channel);
+            NetSendResult result = Peer.SendMessage(msg, (NetConnection)sendTo, (Lidgren.Network.NetDeliveryMethod)packet.Method, channel);
 
             if (result == NetSendResult.Queued || result == NetSendResult.Sent)
                 return true;
@@ -41,8 +42,8 @@ namespace Asgard
     public class BifrostClient : Connection
     {
         #region delegates
-        public delegate void OnConnectedHandler(NetConnection connection);
-        public delegate void OnDisconnectHandler(NetConnection connection);
+        public delegate void OnConnectedHandler(NetNode connection);
+        public delegate void OnDisconnectHandler(NetNode connection);
         #endregion
 
         #region public events
@@ -93,7 +94,7 @@ namespace Asgard
             {
                 try
                 {
-                    handler(connection);
+                    handler((NetNode)connection);
                 }
                 catch (Exception e)
                 {
@@ -125,7 +126,7 @@ namespace Asgard
             {
                 try
                 {
-                    handler(connection);
+                    handler((NetNode)connection);
                 }
                 catch (Exception e)
                 {
@@ -149,7 +150,7 @@ namespace Asgard
         public void Send(Packet packet, int channel = 0)
         {
             var conn = _clientInstance.ServerConnection;
-            Send(packet, conn, channel);
+            Send(packet, (NetNode)conn, channel);
         }
 
         #region Connection setup
@@ -227,7 +228,7 @@ namespace Asgard
                         break;
                     case NetIncomingMessageType.Data:
                         var packet = Packet.Get(message);
-                        packet.Connection = message.SenderConnection;
+                        packet.Connection = (NetNode)message.SenderConnection;
                         packet.ReceiveTime = message.ReceiveTime;
 
                         PacketFactory.RaiseCallbacks(packet);
@@ -449,7 +450,7 @@ namespace Asgard
                         break;
                     case NetIncomingMessageType.Data:
                         var packet = Packet.Get(message);
-                        packet.Connection = message.SenderConnection;
+                        packet.Connection = (NetNode)message.SenderConnection;
                         packet.ReceiveTime = message.ReceiveTime;
                        
                         PacketFactory.RaiseCallbacks(packet);
@@ -461,6 +462,35 @@ namespace Asgard
                 }
                 _serverInstance.Recycle(message);
             }
+        }
+
+        /// Assuming that excludeGroup is small
+        public void Send(Packet packet, IList<NetNode> sendToList, IList<NetNode> excludeGroup=null, int channel = 0)
+        {
+            var msg = packet.SendMessage(this);
+
+            var group = sendToList.Except(excludeGroup).Cast<NetConnection>().ToList();
+
+            if (group.Count == 0) return;
+            Peer.SendMessage(msg, group, (Lidgren.Network.NetDeliveryMethod)packet.Method, channel);
+        }
+
+        public void Send(Packet packet, IList<NetNode> sendToList, NetNode excludeNode = null, int channel = 0)
+        {
+            var msg = packet.SendMessage(this);
+
+            List<NetConnection> group = new List<NetConnection>();
+
+            foreach (var node in sendToList)
+            {
+                if (excludeNode == node)
+                    continue;
+
+                group.Add(node);
+            }
+
+            if (group.Count == 0) return;
+            Peer.SendMessage(msg, group, (Lidgren.Network.NetDeliveryMethod)packet.Method, channel);
         }
         #endregion
 

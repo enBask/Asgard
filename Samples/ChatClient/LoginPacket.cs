@@ -4,20 +4,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Lidgren.Network;
+using Asgard.Network;
 
 namespace ChatServer
 {
-    [Packet(101, Lidgren.Network.NetDeliveryMethod.ReliableUnordered)]
+    [Packet(101, NetDeliveryMethod.ReliableUnordered)]
     public class ChatLoginPacket : Packet
     {
         public string Username { get; set; }
-        public override void Deserialize(NetIncomingMessage msg)
+        public override void Deserialize(Bitstream msg)
         {
             Username = msg.ReadString();
         }
 
-        public override void Serialize(NetOutgoingMessage msg)
+        public override void Serialize(Bitstream msg)
         {
             msg.Write(Username);
         }

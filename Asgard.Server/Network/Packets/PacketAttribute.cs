@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Asgard.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;

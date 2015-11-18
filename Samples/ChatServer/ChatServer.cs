@@ -1,6 +1,6 @@
 ﻿using Asgard;
+using Asgard.Network;
 using Asgard.Packets;
-using Lidgren.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,8 +13,10 @@ namespace ChatServer
     {
         BifrostServer _bifrost;
 
-        Dictionary<NetConnection, string> _users = 
-            new Dictionary<NetConnection, string>();
+        Dictionary<NetNode, string> _users =
+            new Dictionary<NetNode, string>();
+
+        private static readonly DateTime s_dateInit = DateTime.Now;
 
         public ChatServer()
         {
@@ -41,6 +43,12 @@ namespace ChatServer
 
         }
 
+        private DateTime GetTime(double time)
+        {
+            var dt = s_dateInit + TimeSpan.FromSeconds(time);
+            return dt;
+        }
+
         private void OnChatMessage(ChatPacket packet)
         {
             var conn = packet.Connection;
@@ -51,9 +59,14 @@ namespace ChatServer
             }
 
             var msg = packet.Message;
-            var msgTime = NetTime.ToReadable(packet.ReceiveTime);
 
+            var msgTime = GetTime(packet.ReceiveTime).ToString();
             Console.WriteLine("{0} : {1} - {2}", msgTime, who, msg);
+
+            var connections = _users.Keys.ToList();
+            packet.From = who;
+            _bifrost.Send(packet, connections, conn);
+
         }
         private void OnLogin(ChatLoginPacket obj)
         {

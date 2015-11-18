@@ -1,4 +1,5 @@
-﻿using Lidgren.Network;
+﻿using Asgard.Network;
+using Lidgren.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +17,8 @@ namespace Asgard.Packets
     {
         public ushort PacketId { get; private set; }
 
-        public NetDeliveryMethod Method { get; private set; }
-        public NetConnection Connection
+        public Network.NetDeliveryMethod Method { get; private set; }
+        public NetNode Connection
         { get; set; }
 
         public double ReceiveTime
@@ -30,8 +31,8 @@ namespace Asgard.Packets
             Method = PacketFactory.GetPacketType(PacketId).Method;
         }
 
-        public abstract void Deserialize(NetIncomingMessage msg);
-        public abstract void Serialize(NetOutgoingMessage msg);
+        public abstract void Deserialize(Bitstream msg);
+        public abstract void Serialize(Bitstream msg);
 
         public NetOutgoingMessage SendMessage(Connection connection)
         {
@@ -39,7 +40,8 @@ namespace Asgard.Packets
             NetOutgoingMessage sendMsg = peer.CreateMessage();
             sendMsg.Write((uint)PacketId, 16);
 
-            Serialize(sendMsg);
+            Bitstream stream = new Bitstream(sendMsg);
+            Serialize(stream);
             return sendMsg;
         }
 
@@ -53,7 +55,8 @@ namespace Asgard.Packets
 
             if (newPacket != null)
             {
-                newPacket.Deserialize(message);
+                Bitstream stream = new Bitstream(message);
+                newPacket.Deserialize(stream);
                 return newPacket;
             }
 

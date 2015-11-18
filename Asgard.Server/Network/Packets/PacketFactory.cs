@@ -1,5 +1,5 @@
-﻿using Asgard.Packets;
-using Lidgren.Network;
+﻿using Asgard.Network;
+using Asgard.Packets;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

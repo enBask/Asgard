@@ -1,7 +1,7 @@
 ﻿using Asgard;
+using Asgard.Network;
 using Asgard.Packets;
 using ChatServer;
-using Lidgren.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,14 +23,14 @@ namespace ChatClient
             PacketFactory.AddCallback<ChatPacket>(OnChatMessage);
         }
 
-        private void ChatClient_OnConnection(NetConnection connection)
+        private void ChatClient_OnConnection(NetNode connection)
         {
             _connected = true;
             Console.WriteLine("Connected");
             Login();
         }
 
-        private void ChatClient_OnDisconnect(NetConnection connection)
+        private void ChatClient_OnDisconnect(NetNode connection)
         {
             _loggedIn = false;
             _connected = false;
@@ -41,6 +41,10 @@ namespace ChatClient
 
         private void OnChatMessage(ChatPacket packet)
         {
+            var who = packet.From;  
+            var msg = packet.Message;
+
+            Console.WriteLine("{0} - {1}", who, msg);
         }
 
         private void OnLoginResult(LoginResponsePacket packet)
