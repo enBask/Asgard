@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -55,8 +56,14 @@ namespace Asgard.Utils
 
             if (!File.Exists(_configFile))
             {
-                _jsonObject = new JObject();
-                return;
+                var basePath = Path.GetDirectoryName(Assembly.GetEntryAssembly().CodeBase);
+                _configFile = Path.Combine(basePath, _configFile);
+
+                if (!File.Exists(_configFile))
+                {
+                    _jsonObject = new JObject();
+                    return;
+                }
             }
 
             var rawJson = File.ReadAllText(_configFile);

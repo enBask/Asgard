@@ -26,8 +26,8 @@ namespace Asgard
         private static ConcurrentDictionary<Type, ushort> _PacketReverseLookup =
             new ConcurrentDictionary<Type, ushort>();
 
-        private static ConcurrentDictionary<ushort, List<Action<IPacket>>> _PacketCallback =
-            new ConcurrentDictionary<ushort, List<Action<IPacket>>>();
+        private static ConcurrentDictionary<ushort, List<Action<Packet>>> _PacketCallback =
+            new ConcurrentDictionary<ushort, List<Action<Packet>>>();
 
   
         public static void AddPacketType<T>(ushort packetId, NetDeliveryMethod method)
@@ -37,10 +37,6 @@ namespace Asgard
 
         public static void AddPacketType(Type packetType, ushort packetId, NetDeliveryMethod method)
         {
-            if (packetId <= maxInternalPacketId)
-            {
-                throw new ArgumentException("packet id falls in reserved range.");
-            }
             if (_PacketLookup.ContainsKey(packetId))
             {
                 throw new ArgumentException("packet id in use");
@@ -93,13 +89,19 @@ namespace Asgard
         {
             var packetId = GetPacketId<T>();
 
-            List<Action<IPacket>> callbackList = new List<Action<IPacket>>();
-            callbackList.Add((Action<IPacket>)callback);
+
+            Action<Packet> action = (Packet p) =>
+            {
+                callback(p as T);
+            };
+
+            List<Action<Packet>> callbackList = new List<Action<Packet>>();
+            callbackList.Add(action);
 
             _PacketCallback.AddOrUpdate(packetId, callbackList, (pId, pList) =>
             {
 
-                pList.Add((Action<IPacket>)callback);
+                pList.Add(action);
                 return pList;
             });
         }
@@ -107,7 +109,7 @@ namespace Asgard
         public static void RaiseCallbacks(Packet packet)
         {
             var packetId = packet.PacketId;
-            List<Action<IPacket>> callbackList;
+            List<Action<Packet>> callbackList;
             if (_PacketCallback.TryGetValue(packetId, out callbackList))
             {
                 foreach(var callback in callbackList)

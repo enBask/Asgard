@@ -17,24 +17,28 @@ namespace Asgard.Utils
             var ignoredAssemblies =
             attributeType.Assembly.GetReferencedAssemblies();
 
-            ScanAssembly(Assembly.GetEntryAssembly());
+            List<Assembly> _loadedList = new List<Assembly>();
+            ScanAssembly(Assembly.GetEntryAssembly(), _loadedList);
         }
 
-        private static void ScanAssembly(Assembly assembly)
+        private static void ScanAssembly(Assembly assembly, List<Assembly> loadedList)
         {
-            foreach(var type in assembly.GetTypes())
+            if (loadedList.Contains(assembly))
+                return;
+
+            loadedList.Add(assembly);
+            foreach (var type in assembly.GetTypes())
             {
                 var packetAttribute = type.GetCustomAttribute<PacketAttribute>();
                 if (packetAttribute != null)
                 {
-                    var boundType = type.GetType();
-                    packetAttribute.BindToFactory(boundType);
+                    packetAttribute.BindToFactory(type);
                 }
             }
 
-            foreach(var refAssembly in assembly.GetReferencedAssemblies())
+            foreach (var refAssembly in assembly.GetReferencedAssemblies())
             {
-                ScanAssembly(Assembly.Load(refAssembly));
+                ScanAssembly(Assembly.Load(refAssembly), loadedList);
             }
         }
     }
