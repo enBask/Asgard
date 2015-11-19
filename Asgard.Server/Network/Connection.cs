@@ -15,8 +15,8 @@ namespace Asgard
     public class BifrostServer : Connection, ISystem
     {
         #region delegates
-        public delegate void OnConnectedHandler(NetConnection connection);
-        public delegate void OnDisconnectHandler(NetConnection connection);
+        public delegate void OnConnectedHandler(NetNode connection);
+        public delegate void OnDisconnectHandler(NetNode connection);
         #endregion
 
         #region public events
@@ -28,9 +28,6 @@ namespace Asgard
         private NetServer _serverInstance;
         private volatile bool _running = false;
         private Thread _networkThread;
-
-        private ConcurrentDictionary<ushort, Player> _Players = new ConcurrentDictionary<ushort, Player>();
-        private ConcurrentDictionary<NetConnection, Player> _PlayerByConnection = new ConcurrentDictionary<NetConnection, Player>();
         #endregion
 
         #region Properties
@@ -79,7 +76,7 @@ namespace Asgard
             {
                 try
                 {
-                    handler(connection);
+                    handler((NetNode)connection);
                 }
                 catch(Exception e)
                 {
@@ -111,7 +108,7 @@ namespace Asgard
             {
                 try
                 {
-                    handler(connection);
+                    handler((NetNode)connection);
                 }
                 catch (Exception e)
                 {
@@ -127,13 +124,6 @@ namespace Asgard
             if (exceptions != null)
             {
                 throw new AggregateException("handler error", exceptions);
-            }
-
-            //remove player tied to connection.
-            var player = FindPlayerByConnection(connection);
-            if (player != null)
-            {
-                RemovePlayer(player);
             }
 
             return;
@@ -232,7 +222,7 @@ namespace Asgard
         }
 
         /// Assuming that excludeGroup is small
-        public void Send(Packet packet, IList<NetNode> sendToList, IList<NetNode> excludeGroup=null, int channel = 0)
+        public void Send(Packet packet, IList<NetNode> sendToList, IList<NetNode> excludeGroup, int channel = 0)
         {
             var msg = packet.SendMessage(this);
 
@@ -258,56 +248,6 @@ namespace Asgard
 
             if (group.Count == 0) return;
             Peer.SendMessage(msg, group, (Lidgren.Network.NetDeliveryMethod)packet.Method, channel);
-        }
-        #endregion
-
-        #region player logic
-        public Player AddPlayer(ushort id, NetConnection connection)
-        {
-            var player = FindPlayer(id);
-            if (player != null)
-            {
-                var oldConnection = player.Connection;
-                Player oldPlayer;
-                _PlayerByConnection.TryRemove(oldConnection, out oldPlayer);
-
-                player.ResetConnection(connection);
-                _PlayerByConnection.TryAdd(connection, player);
-
-            }
-            else
-            {
-                player = new Player(connection, id);
-                _Players.TryAdd(id, player);
-                _PlayerByConnection.TryAdd(connection, player);
-            }
-
-            return player;
-
-        }
-        public void RemovePlayer(Player player)
-        {
-            var id = player.Id;
-            Player oldPlayer;
-            _Players.TryRemove(id, out oldPlayer);
-            _PlayerByConnection.TryRemove(player.Connection, out oldPlayer);
-            player.Connection.Disconnect("");
-        }
-        public Player FindPlayer(ushort id)
-        {
-            Player player;
-            if (_Players.TryGetValue(id, out player))
-            {
-                return player;
-            }
-
-            return null;
-        }
-        public Player FindPlayerByConnection(NetConnection connection)
-        {
-            Player player = null;
-            _PlayerByConnection.TryGetValue(connection, out player);
-            return player;
         }
         #endregion
     }

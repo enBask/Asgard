@@ -51,11 +51,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsgardServer.cs" />
+    <Compile Include="EntitySystems\Components\PlayerComponent.cs" />
+    <Compile Include="EntitySystems\PlayerSystem.cs" />
     <Compile Include="ISystem.cs" />
     <Compile Include="Network\Connection.cs" />
     <Compile Include="Network\NetConfig.cs" />
     <Compile Include="Network\Packets\Login.Packet.cs" />
-    <Compile Include="Network\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

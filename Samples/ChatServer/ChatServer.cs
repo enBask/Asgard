@@ -1,6 +1,8 @@
 ﻿using Asgard;
 using Asgard.Core.Network;
 using Asgard.Core.Network.Packets;
+using Asgard.EntitySystems;
+using Asgard.EntitySystems.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,25 +14,47 @@ namespace ChatServer
     class ChatServer : AsgardServer, ISystem
     {
         BifrostServer _bifrost;
-
-        Dictionary<NetNode, string> _users =
-            new Dictionary<NetNode, string>();
-
+        PlayerSystem<PlayerObject> _playerSystem;
         private static readonly DateTime s_dateInit = DateTime.Now;
 
         public ChatServer()
         {
-            AddSystem("chatServer", this, 1);
+            AddSystem(this, 1);
+
+            _playerSystem = new PlayerSystem<PlayerObject>();
+            AddEntitySystem(_playerSystem);
 
             PacketFactory.AddCallback<ChatPacket>(OnChatMessage);
             PacketFactory.AddCallback<ChatLoginPacket>(OnLogin);
+
+            
         }
 
 
         public bool Start()
         {
-            _bifrost = LookupSystem("bifrost") as BifrostServer;
+            _bifrost = LookupSystem<BifrostServer>();
+            _bifrost.OnDisconnect += _bifrost_OnDisconnect;
             return true;
+        }
+
+        private void _bifrost_OnDisconnect(NetNode connection)
+        {
+            var playerEntity = _playerSystem.Get(connection);
+            if (playerEntity != null)
+            {
+                var playerData = playerEntity.GetComponent<PlayerObject>();
+
+                var chatPacket = new ChatPacket();
+                chatPacket.Message = playerData.DisplayName + " has disconnected";
+                chatPacket.From = "SYSTEM";
+
+
+                _playerSystem.Remove(playerEntity);
+
+                _bifrost.Send(chatPacket, _playerSystem.Connections.ToList());
+
+            }
         }
 
         public bool Stop()
@@ -53,9 +77,15 @@ namespace ChatServer
         {
             var conn = packet.Connection;
             string who;
-            if (!_users.TryGetValue(conn, out who))
+            
+            var playerEntity = _playerSystem.Get(conn);
+            if (playerEntity != null)
             {
-                who = "";
+                who = playerEntity.GetComponent<PlayerObject>().DisplayName;
+            }
+            else
+            {
+                who = String.Empty;
             }
 
             var msg = packet.Message;
@@ -63,17 +93,21 @@ namespace ChatServer
             var msgTime = GetTime(packet.ReceiveTime).ToString();
             Console.WriteLine("{0} : {1} - {2}", msgTime, who, msg);
 
-            var connections = _users.Keys.ToList();
+            var connections = _playerSystem.Connections.ToList();
             packet.From = who;
             _bifrost.Send(packet, connections, conn);
 
         }
         private void OnLogin(ChatLoginPacket obj)
         {
-            _users.Add(obj.Connection, obj.Username);
-
             LoginResponsePacket packet = new LoginResponsePacket();
             _bifrost.Send(packet, obj.Connection);
+
+
+            _playerSystem.Add(new PlayerObject(               
+                displayName: obj.Username,
+                networkNode: obj.Connection
+                ));
         }
     }
 }
