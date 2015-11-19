@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asgard.Network
+namespace Asgard.Core.Network
 {
     public class Bitstream
     {

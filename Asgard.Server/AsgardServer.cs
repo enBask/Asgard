@@ -1,5 +1,5 @@
-﻿using Asgard.Network;
-using Asgard.Utils;
+﻿using Asgard.Server.Network;
+using Asgard.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

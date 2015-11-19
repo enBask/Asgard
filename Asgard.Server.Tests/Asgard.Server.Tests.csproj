@@ -43,6 +43,14 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Asgard.Client\Asgard.Client.csproj">
+      <Project>{c5ef3974-6def-4c8c-bfdb-e26fce8322b1}</Project>
+      <Name>Asgard.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Asgard.Core\Asgard.Core.csproj">
+      <Project>{ff8710c2-03ea-45e2-a413-d207ab553123}</Project>
+      <Name>Asgard.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Asgard.Server\Asgard.Server.csproj">
       <Project>{B9997944-FC41-4832-91B1-0E8C7F4CECD0}</Project>
       <Name>Asgard.Server</Name>

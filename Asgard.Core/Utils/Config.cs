@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asgard.Utils
+namespace Asgard.Core.Utils
 {
     /// <summary>
     /// Thread safe JSON config system

@@ -1,4 +1,4 @@
-﻿using Asgard.Packets;
+﻿using Asgard.Core.Network.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asgard.Utils
+namespace Asgard.Core.Utils
 {
     internal static class PacketTypeScanner
     {

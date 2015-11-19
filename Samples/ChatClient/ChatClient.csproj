@@ -53,9 +53,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Asgard.Server\Asgard.Server.csproj">
-      <Project>{b9997944-fc41-4832-91b1-0e8c7f4cecd0}</Project>
-      <Name>Asgard.Server</Name>
+    <ProjectReference Include="..\..\Asgard.Client\Asgard.Client.csproj">
+      <Project>{c5ef3974-6def-4c8c-bfdb-e26fce8322b1}</Project>
+      <Name>Asgard.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Asgard.Core\Asgard.Core.csproj">
+      <Project>{ff8710c2-03ea-45e2-a413-d207ab553123}</Project>
+      <Name>Asgard.Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

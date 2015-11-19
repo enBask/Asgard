@@ -1,11 +1,11 @@
-﻿using Asgard.Network;
+﻿using Asgard.Core.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asgard.Packets
+namespace Asgard.Core.Network.Packets
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class PacketAttribute : Attribute

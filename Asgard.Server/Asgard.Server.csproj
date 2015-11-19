@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="artemis">
+      <HintPath>imports\artemis.dll</HintPath>
+    </Reference>
     <Reference Include="Lidgren.Network">
       <HintPath>imports\Lidgren.Network.dll</HintPath>
     </Reference>
@@ -49,25 +52,20 @@
   <ItemGroup>
     <Compile Include="AsgardServer.cs" />
     <Compile Include="ISystem.cs" />
-    <Compile Include="Network\Bitstream.cs" />
-    <Compile Include="Network\Bootstrap.cs" />
     <Compile Include="Network\Connection.cs" />
     <Compile Include="Network\NetConfig.cs" />
-    <Compile Include="Network\NetDeliveryMethod.cs" />
-    <Compile Include="Network\NetNode.cs" />
-    <Compile Include="Network\NetTime.cs" />
     <Compile Include="Network\Packets\Login.Packet.cs" />
-    <Compile Include="Network\Packets\Packet.cs" />
-    <Compile Include="Network\Packets\PacketAttribute.cs" />
-    <Compile Include="Network\Packets\PacketFactory.cs" />
-    <Compile Include="Network\Packets\PacketTypes.Internal.cs" />
     <Compile Include="Network\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utils\Config.cs" />
-    <Compile Include="Utils\PacketTypeScanner.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Asgard.Core\Asgard.Core.csproj">
+      <Project>{ff8710c2-03ea-45e2-a413-d207ab553123}</Project>
+      <Name>Asgard.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

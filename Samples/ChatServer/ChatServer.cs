@@ -1,6 +1,6 @@
 ﻿using Asgard;
-using Asgard.Network;
-using Asgard.Packets;
+using Asgard.Core.Network;
+using Asgard.Core.Network.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
