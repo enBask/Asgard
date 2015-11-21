@@ -16,6 +16,11 @@ namespace Asgard.Core.Network
             _connection = conection;
         }
 
+        public double GetRemoteTime(double localTime)
+        {
+            return _connection.GetRemoteTime(localTime) - (_connection.AverageRoundtripTime/2.0);
+        }
+
         public static implicit operator NetConnection(NetNode node)
         {
             return node._connection;

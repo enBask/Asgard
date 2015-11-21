@@ -8,11 +8,16 @@ using System.Text;
 using System.Threading.Tasks;
 using Artemis;
 using Artemis.System;
+using Asgard.Core.Network;
 
 namespace Asgard
 {
     public class AsgardServer
     {
+        public delegate void OnSendSnapshotHandler();
+        public event OnSendSnapshotHandler OnSendSnapShot;
+
+
         #region Private Vars
         Dictionary<Type, ISystem> _systems = new Dictionary<Type, ISystem>();
         SortedList<int, List<ISystem>> _sortedSystems = new SortedList<int, List<ISystem>>();
@@ -22,8 +27,9 @@ namespace Asgard
 
         public AsgardServer()
         {
-            LoadConfig();
             _entityWorld = new EntityWorld(false, true, true);
+
+            LoadConfig();
         }
 
         private void LoadConfig()
@@ -31,12 +37,22 @@ namespace Asgard
             NetConfig netConfig = Config.Get<NetConfig>("network");
             _bifrost = new BifrostServer(netConfig.Port, netConfig.MaxConnections);
             AddInternalSystem<BifrostServer>(_bifrost, 0);
+
+            var physics = new PhysicsSystem2D();
+            AddEntitySystem<PhysicsSystem2D>(physics);
         }
+
 
         #region system system
         internal void AddInternalSystem<T>(T system, int runOrder = 1) where T : class, ISystem
         {
             var type = typeof(T);
+
+            if (system is BaseSystem)
+            {
+                (system as BaseSystem).EntityManager = _entityWorld.EntityManager;
+            }
+
             _systems[type] = system;
 
             List<ISystem> systems;
@@ -69,6 +85,11 @@ namespace Asgard
             _entityWorld.SystemManager.SetSystem<T>(system, Artemis.Manager.GameLoopType.Update);
         }
 
+        public T GetEntitySystem<T>() where T : EntitySystem
+        {
+            return _entityWorld.SystemManager.GetSystem<T>();
+        }
+
         public T LookupSystem<T>() where T: class,ISystem
         {
             ISystem sys;
@@ -96,10 +117,11 @@ namespace Asgard
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            double lastSecondStamp = timer.Elapsed.TotalSeconds;
+            float lastSecondStamp = (float)timer.Elapsed.TotalSeconds;
             while (true)
             {
-                var elapsedSeconds = timer.Elapsed.TotalSeconds;
+                System.Threading.Thread.Sleep(30);
+                var elapsedSeconds = (float)timer.Elapsed.TotalSeconds;
                 var delta = elapsedSeconds - lastSecondStamp;
                 lastSecondStamp = elapsedSeconds;
 
@@ -113,7 +135,10 @@ namespace Asgard
 
                 _entityWorld.Update();
 
-//                _bifrost.SendFrame();
+                if (OnSendSnapShot != null)
+                {
+                    OnSendSnapShot();
+                }
 
                 System.Threading.Thread.Sleep(1);
             }

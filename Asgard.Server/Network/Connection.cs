@@ -9,6 +9,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Artemis.Manager;
 
 namespace Asgard
 {
@@ -38,6 +39,11 @@ namespace Asgard
                 return _serverInstance as NetPeer;
             }         
         }
+
+        public EntityManager EntityManager
+        {
+            get; internal set;
+        }
         #endregion
 
         #region ctors
@@ -51,6 +57,9 @@ namespace Asgard
             config.AutoExpandMTU = true;
             config.AutoFlushSendQueue = true;
             config.UseMessageRecycling = true;
+            config.SimulatedLoss = 0.2f;
+            config.SimulatedMinimumLatency = 0.1f;
+            config.SimulatedRandomLatency = 0.1f;
 
             _serverInstance = new NetServer(config);
 
@@ -58,7 +67,7 @@ namespace Asgard
         }
         #endregion
 
-        public void Tick(double delta)
+        public void Tick( float tick )
         {
 
         }

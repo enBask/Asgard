@@ -1,0 +1,7 @@
+﻿{
+    "network":
+    {
+        "port" : 8899,
+        "maxconnections" : 50
+    }
+}

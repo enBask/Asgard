@@ -24,5 +24,46 @@ namespace Asgard.Core.Network
         {
             _buffer.Write(data);
         }
+
+        public int ReadInt32()
+        {
+            return _buffer.ReadInt32();
+        }
+
+        public void Write(int data)
+        {
+            _buffer.Write(data);
+        }
+
+        public ushort ReadUInt16()
+        {
+            return _buffer.ReadUInt16();
+        }
+
+        public void Write(ushort data)
+        {
+            _buffer.Write(data);
+        }
+
+        public double ReadDouble()
+        {
+            return _buffer.ReadDouble();
+        }
+
+        public void Write(double data)
+        {
+            _buffer.Write(data);
+        }
+
+        public float ReadFloat()
+        {
+            return _buffer.ReadFloat();
+        }
+
+        public void Write(float data)
+        {
+            _buffer.Write(data);
+        }
+
     }
 }

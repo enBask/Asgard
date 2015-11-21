@@ -26,6 +26,14 @@ namespace Asgard.Core.Network
         public virtual NetPeer Peer {get;}
 
 
+        public double NetTime
+        {
+            get
+            {
+                return Lidgren.Network.NetTime.Now;
+            }
+        }
+
         public bool Send(Packet packet, NetNode sendTo, int channel=0)
         {
             var msg = packet.SendMessage(this);

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Artemis.Manager;
 
 namespace ChatServer
 {
@@ -16,6 +17,11 @@ namespace ChatServer
         BifrostServer _bifrost;
         PlayerSystem<PlayerObject> _playerSystem;
         private static readonly DateTime s_dateInit = DateTime.Now;
+
+        public EntityManager EntityManager
+        {
+            get; set;
+        }
 
         public ChatServer()
         {
@@ -62,7 +68,7 @@ namespace ChatServer
             return true;
         }
 
-        public void Tick(double delta)
+        public void Tick(float delta)
         {
 
         }
