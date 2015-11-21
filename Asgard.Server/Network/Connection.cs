@@ -57,9 +57,9 @@ namespace Asgard
             config.AutoExpandMTU = true;
             config.AutoFlushSendQueue = true;
             config.UseMessageRecycling = true;
-            config.SimulatedLoss = 0.2f;
-            config.SimulatedMinimumLatency = 0.1f;
-            config.SimulatedRandomLatency = 0.1f;
+            config.SimulatedLoss = 0.02f;
+            config.SimulatedMinimumLatency = 0.05f;
+            config.SimulatedRandomLatency = 0.05f;
 
             _serverInstance = new NetServer(config);
 

@@ -20,7 +20,6 @@ namespace MoveServer
             InitializeComponent();
 
             var moveServer = new MoveServer();
-            moveServer.Start();
 
             var renderSystem = moveServer.GetEntitySystem<RenderSystem>();
             renderSystem.TargetGraphics = CreateGraphics();

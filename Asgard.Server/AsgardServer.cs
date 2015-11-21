@@ -23,6 +23,11 @@ namespace Asgard
         SortedList<int, List<ISystem>> _sortedSystems = new SortedList<int, List<ISystem>>();
         BifrostServer _bifrost = null;
         EntityWorld _entityWorld;
+
+        protected NetConfig _netConfig;
+        protected PhysicsConfig _phyConfig;
+
+        float _netAccum = 0f;
         #endregion
 
         public AsgardServer()
@@ -34,11 +39,13 @@ namespace Asgard
 
         private void LoadConfig()
         {
-            NetConfig netConfig = Config.Get<NetConfig>("network");
-            _bifrost = new BifrostServer(netConfig.Port, netConfig.MaxConnections);
+            _netConfig = Config.Get<NetConfig>("network");
+            _phyConfig = Config.Get<PhysicsConfig>("physics");
+
+            _bifrost = new BifrostServer(_netConfig.Port, _netConfig.MaxConnections);
             AddInternalSystem<BifrostServer>(_bifrost, 0);
 
-            var physics = new PhysicsSystem2D();
+            var physics = new PhysicsSystem2D( 1f / _phyConfig.tickrate );
             AddEntitySystem<PhysicsSystem2D>(physics);
         }
 
@@ -120,7 +127,6 @@ namespace Asgard
             float lastSecondStamp = (float)timer.Elapsed.TotalSeconds;
             while (true)
             {
-                System.Threading.Thread.Sleep(30);
                 var elapsedSeconds = (float)timer.Elapsed.TotalSeconds;
                 var delta = elapsedSeconds - lastSecondStamp;
                 lastSecondStamp = elapsedSeconds;
@@ -132,12 +138,26 @@ namespace Asgard
                         system.Tick(delta);
                     }
                 }
-
                 _entityWorld.Update();
 
-                if (OnSendSnapShot != null)
+                _netAccum  += delta;
+                var invRate = 1f / _netConfig.tickrate;
+                if (_netAccum >= invRate)
                 {
-                    OnSendSnapShot();
+                    var ticks = 0;
+                    while(_netAccum >= invRate)
+                    {
+                        _netAccum -= invRate;
+                        ticks++;
+                    }
+
+                    while(ticks-- > 0)
+                    {
+                        if (OnSendSnapShot != null)
+                        {
+                            OnSendSnapShot();
+                        }
+                    }
                 }
 
                 System.Threading.Thread.Sleep(1);

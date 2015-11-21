@@ -32,13 +32,12 @@ namespace Asgard
         public PhysicsSystem2D(float steptime = 0.03f) // 30 TPS
         {
             _stepTime = steptime;
+            _Worlds = new ConcurrentDictionary<int, World>();
         }
 
         public bool Start()
         {
             EntityManager.RemovedComponentEvent += EntityManager_RemovedComponentEvent;
-
-            _Worlds = new ConcurrentDictionary<int, World>();
             return true;
         }
 
@@ -63,7 +62,7 @@ namespace Asgard
             return false;
         }
 
-        internal World GetWorld(int id)
+        public World GetWorld(int id)
         {
             World world;
             _Worlds.TryGetValue(id, out world);
@@ -112,6 +111,12 @@ namespace Asgard
                     var body = BodyFactory.CreateBody(world, pComp.StartingPosition, 0, entity);
                     body.BodyType = pComp.BodyType;
                     pComp.Body = body;
+
+                    foreach(var shape in pComp.Shapes)
+                    {
+                        var fixture = body.CreateFixture(shape);
+                        fixture.Restitution = pComp.StartingRestitution;
+                    }
                 }
             }
         }

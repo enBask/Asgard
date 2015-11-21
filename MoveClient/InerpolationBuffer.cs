@@ -10,7 +10,7 @@ namespace MoveClient
 {
     public static class MathHelpers
     {
-        public static double LinearInterpolate(double a, double b, double t)
+        public static float LinearInterpolate(float a, float b, float t)
         {
             var r =  a + (b - a) * t;
             return r;
@@ -33,21 +33,21 @@ namespace MoveClient
         where TData : class
         where T : Packet, IInterpolationPacket<TData>
     {
-        private double _tickRate = 0;
-        private double _delay = 0;
+        private float _tickRate = 0;
+        private float _delay = 0;
         private int _frameCount = 0;
         private CircularBuffer<T> _buffer = new CircularBuffer<T>(60);
 
         private static List<PropertyInfo> _properties = new List<PropertyInfo>();
         private static List<FieldInfo> _fields = new List<FieldInfo>();
 
-        double start_time = 0.0;
+        float start_time = 0.0f;
         bool started = false;
 
         uint start_id;
         uint end_id;
-        double interpolation_start_time;
-        double interpolation_end_time;
+        float interpolation_start_time;
+        float interpolation_end_time;
         bool is_interpolating = false;
 
         static InterpolationBuffer()
@@ -74,7 +74,7 @@ namespace MoveClient
             }
         }
 
-        public InterpolationBuffer(double tickRate, double delay)
+        public InterpolationBuffer(float tickRate, float delay)
         {
             _tickRate = tickRate;
             _delay = delay;
@@ -87,11 +87,11 @@ namespace MoveClient
 
             if (!started)
             {
-                start_time = data.Connection.GetRemoteTime(data.ReceiveTime);
+                start_time = (float)data.Connection.GetRemoteTime(data.ReceiveTime);
                 started = true;
             }
         }
-        public List<TData> Update(double time)
+        public List<TData> Update(float time)
         {
             if (!started)
             {
@@ -104,7 +104,7 @@ namespace MoveClient
                 return null;
             }
 
-            double id_from_start = time * _tickRate;
+            float id_from_start = time * _tickRate;
 
             if (is_interpolating)
             {
@@ -127,7 +127,7 @@ namespace MoveClient
                     start_id = interpolation_id;
                     end_id = start_id;
 
-                    interpolation_start_time = id_from_start * (1.0 / _tickRate);
+                    interpolation_start_time = id_from_start * (1.0f / _tickRate);
                     interpolation_end_time = interpolation_start_time;
                     is_interpolating = true;
                 }
@@ -152,7 +152,7 @@ namespace MoveClient
                     if (next_snap != null)
                     {
                         end_id = start_id + i;
-                        interpolation_end_time = interpolation_start_time + (1.0 / _tickRate) * i;
+                        interpolation_end_time = interpolation_start_time + (1.0f / _tickRate) * i;
                         break;
                     }
                 }
@@ -171,9 +171,9 @@ namespace MoveClient
                 return null;
             }
 
-            double t = (time - interpolation_start_time) / (interpolation_end_time - interpolation_start_time);
-            t = Math.Min(t, 1.0);
-            t = Math.Max(t, 0.0);
+            float t = (time - interpolation_start_time) / (interpolation_end_time - interpolation_start_time);
+            t = Math.Min(t, 1.0f);
+            t = Math.Max(t, 0.0f);
 
 
             List<TData> retList = new List<TData>();
@@ -188,8 +188,8 @@ namespace MoveClient
                     prop.SetValue(interp_object,
                         MathHelpers.LinearInterpolate
                         (
-                            (double)prop.GetValue(obj_a),
-                            (double)prop.GetValue(obj_b),
+                            (float)prop.GetValue(obj_a),
+                            (float)prop.GetValue(obj_b),
                             t)
                         );
                 }
@@ -199,8 +199,8 @@ namespace MoveClient
                     field.SetValue(interp_object,
                         MathHelpers.LinearInterpolate
                         (
-                            (double)field.GetValue(obj_a),
-                            (double)field.GetValue(obj_b),
+                            (float)field.GetValue(obj_a),
+                            (float)field.GetValue(obj_b),
                             t)
                         );
                 }

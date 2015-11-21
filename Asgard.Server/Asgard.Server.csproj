@@ -63,6 +63,7 @@
     <Compile Include="Network\Connection.cs" />
     <Compile Include="Network\NetConfig.cs" />
     <Compile Include="Network\Packets\Login.Packet.cs" />
+    <Compile Include="PhysicsConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

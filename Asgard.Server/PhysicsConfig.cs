@@ -4,13 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asgard.Server.Network
+namespace Asgard
 {
-    public class NetConfig
+    public class PhysicsConfig
     {
-        public int Port { get; set; }
-        public int MaxConnections { get; set; }
-
         public float tickrate { get; set; }
     }
 }

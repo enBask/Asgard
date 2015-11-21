@@ -1,13 +1,11 @@
 ﻿using Artemis.Attributes;
 using Artemis.System;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Artemis;
 using System.Drawing;
 using Asgard.EntitySystems.Components;
+using FarseerPhysics.Collision.Shapes;
+using Microsoft.Xna.Framework;
 
 namespace MoveServer
 {
@@ -26,7 +24,7 @@ namespace MoveServer
             set
             {
                 _targetGraphics = value;
-                _bitmap = new Bitmap(800, 600);
+                _bitmap = new Bitmap(810, 610);
                 _backBuffer = Graphics.FromImage(_bitmap);
             }
         }
@@ -54,11 +52,32 @@ namespace MoveServer
         public override void Process(Entity entity, Physics2dComponent component1)
         {
             if (component1.Body == null) return;
-            var body = component1.Body;
-            var vel = new Microsoft.Xna.Framework.Vector2(10f, 10f);
-            body.LinearVelocity = vel;
 
-            _backBuffer.FillEllipse(Brushes.Red, (float)component1.Body.Position.X, (float)component1.Body.Position.X, 20f, 20f);
+            var playerComp = entity.GetComponent<PlayerData>();
+            if (playerComp != null)
+            {
+                var body = component1.Body;
+                if (Math.Abs(body.LinearVelocity.X) <= 00.1 && Math.Abs(body.LinearVelocity.Y) <= 00.1)
+                {
+                    body.ApplyLinearImpulse(new Vector2(9000000000000000f, 9000000000000000f / 2f));
+                }
+
+                _backBuffer.FillEllipse(Brushes.Red, (float)(component1.Body.Position.X * 10f) - 10f, (float)(component1.Body.Position.Y * 10f) - 10f, 20f, 20f);
+            }
+
+            foreach (var shape in component1.Shapes)
+            {
+                if (shape is EdgeShape)
+                {
+                    var edge = (shape as EdgeShape);
+
+                    _backBuffer.DrawLine(new Pen(Brushes.Black, 3),
+                        new Point((int)(edge.Vertex1.X*10f), (int)(edge.Vertex1.Y * 10f)),
+                        new Point((int)(edge.Vertex2.X * 10f), (int)(edge.Vertex2.Y * 10f)));
+
+                }
+            }
+
         }
     }
 }
