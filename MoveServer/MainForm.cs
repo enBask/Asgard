@@ -24,6 +24,7 @@ namespace MoveServer
             var renderSystem = moveServer.GetEntitySystem<RenderSystem>();
             renderSystem.TargetGraphics = CreateGraphics();
 
+            moveServer.Start();
             _serverThread = new Thread(() =>
             {
                 moveServer.Run();

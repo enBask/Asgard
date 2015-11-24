@@ -59,7 +59,6 @@
     <Compile Include="EntitySystems\Components\Physics2dComponent.cs" />
     <Compile Include="EntitySystems\Components\PlayerComponent.cs" />
     <Compile Include="EntitySystems\PlayerSystem.cs" />
-    <Compile Include="ISystem.cs" />
     <Compile Include="Network\Connection.cs" />
     <Compile Include="Network\NetConfig.cs" />
     <Compile Include="Network\Packets\Login.Packet.cs" />

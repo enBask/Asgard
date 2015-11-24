@@ -12,7 +12,7 @@ using Artemis.Manager;
 
 namespace ChatServer
 {
-    class ChatServer : AsgardServer, ISystem
+    class ChatServer : AsgardServer<SnapshotPackat, ISystem
     {
         BifrostServer _bifrost;
         PlayerSystem<PlayerObject> _playerSystem;

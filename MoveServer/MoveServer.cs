@@ -10,29 +10,23 @@ using Microsoft.Xna.Framework;
 using Asgard.EntitySystems.Components;
 using FarseerPhysics.Collision.Shapes;
 using Artemis;
+using Artemis.Utils;
+using Asgard.Core.Network;
 
 namespace MoveServer
 {
-    public class MoveServer : AsgardServer, ISystem
+    public class MoveServer : AsgardServer<SnapshotPacket, MoveData>
     {
         BifrostServer _bifrost;
         PlayerSystem<PlayerData> _playerSys;
         int _worldId;
 
-        public EntityManager EntityManager
-        {
-            get; set;
-        }
-
         public MoveServer()
         {
             _playerSys = new PlayerSystem<PlayerData>();
             AddEntitySystem(_playerSys);
-            AddSystem<MoveServer>(this);
 
             PacketFactory.AddCallback<MoveLoginPacket>(OnLogin);
-
-            OnSendSnapShot += MoveServer_OnSendSnapShot;
         }
 
 
@@ -98,38 +92,39 @@ namespace MoveServer
             return true;
         }
 
-        public void Tick(float delta)
+        protected override IEnumerable<int> GetPlayerList()
         {
+            Bag<Entity> players =_playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
 
+            IEnumerable<int> playerIds = players.Select(e => e.Id);
+            return playerIds;
         }
 
-        private void MoveServer_OnSendSnapShot()
+        protected override NetNode GetPlayerConnection(int entityId)
         {
+            Entity player = _playerSys.EntityManager.GetEntity(entityId);
+            var playerData = player.GetComponent<PlayerData>();
+            var node = playerData.NetworkNode;
+            return node;
+        }
 
-            uint snap_id = (uint)Math.Floor(_bifrost.NetTime * _netConfig.tickrate);
+        protected override List<MoveData> GetPlayerDataView(int entityId)
+        {
+            List<MoveData> moveDataSet = new List<MoveData>();
 
-            var snapPacket = new SnapshotPacket();
-            snapPacket.Id = snap_id;
-            snapPacket.DataPoints = new List<MoveData>();
-            var connections = _playerSys.Connections;
-            if (connections.Count == 0) return;
-
-            foreach (var connection in connections)
+            Bag<Entity> players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
+            foreach(var player in players)
             {
-                var playerEntity = _playerSys.Get(connection);
-                var phyComp = playerEntity.GetComponent<Physics2dComponent>();
+                var phyData = player.GetComponent<Physics2dComponent>();
+                if (phyData == null || phyData.Body == null) continue;
 
+                var moveData = new MoveData(phyData.Body.Position.X, phyData.Body.Position.Y, 0f, 0f);
+                moveData.Id = entityId;
 
-                if (phyComp != null && phyComp.Body != null)
-                {
-                    var movedata = new MoveData(phyComp.Body.Position.X, phyComp.Body.Position.Y, 0f, 0f);
-                    movedata.Id = (ushort)playerEntity.Id;
-                    snapPacket.DataPoints.Add(movedata);
-                }
-
+                moveDataSet.Add(moveData);
             }
 
-            _bifrost.Send(snapPacket, connections.ToList());
+            return moveDataSet;
         }
 
     }

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Asgard
 {
-    public class BifrostClient : Connection
+    public class BifrostClient : Connection, ISystem
     {
         #region delegates
         public delegate void OnConnectedHandler(NetNode connection);
@@ -37,6 +37,14 @@ namespace Asgard
             get
             {
                 return _clientInstance as NetPeer;
+            }
+        }
+
+        public Artemis.Manager.EntityManager EntityManager
+        {
+            get
+            {
+                return null;
             }
         }
 
@@ -213,6 +221,10 @@ namespace Asgard
                 }
                 _clientInstance.Recycle(message);
             }
+        }
+
+        public void Tick(float delta)
+        {
         }
         #endregion
 

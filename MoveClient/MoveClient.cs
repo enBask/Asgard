@@ -11,65 +11,43 @@ using System.Threading.Tasks;
 
 namespace ChatClient
 {
-    public class MoveClient : BifrostClient
+    public class MoveClient : Asgard.Client.AsgardClient<SnapshotPacket, MoveData>
     {
-        bool _loggedIn = false;
-        bool _connected = false;
+        BifrostClient _bifrost;
 
-        public MoveClient(string host, int port) : base(host, port)
+        public MoveClient() : base()
         {
-            OnDisconnect += ChatClient_OnDisconnect;
-            OnConnection += ChatClient_OnConnection;
+            _bifrost = LookupSystem<BifrostClient>();
+
+            _bifrost.OnDisconnect += ChatClient_OnDisconnect;
+            _bifrost.OnConnection += ChatClient_OnConnection;
             PacketFactory.AddCallback<LoginResponsePacket>(OnLoginResult);
         }
 
         private void ChatClient_OnConnection(NetNode connection)
         {
-            _connected = true;
             Console.WriteLine("Connected");
             Login();
         }
 
         private void ChatClient_OnDisconnect(NetNode connection)
         {
-            _loggedIn = false;
-            _connected = false;
-            Console.WriteLine("Disconnected");
-
             Connect();
         }
 
         private void OnLoginResult(LoginResponsePacket packet)
         {
-            Console.WriteLine("logged in!");
-            _loggedIn = true;
         }
 
         private void Connect()
         {
-            Start();
+            _bifrost.Start();
         }
 
         private void Login()
         {
             MoveLoginPacket loginPacket = new MoveLoginPacket();
-            Send(loginPacket);
-        }
-
-        public void Run()
-        {
-            Connect();
-
-            while(true)
-            {
-                System.Threading.Thread.Sleep(10);
-                if (!_loggedIn)
-                {
-                    continue;
-                }
-
-
-            }
+            _bifrost.Send(loginPacket);
         }
     }
 }

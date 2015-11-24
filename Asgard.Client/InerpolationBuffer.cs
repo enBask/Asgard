@@ -1,4 +1,5 @@
-﻿using Asgard.Core.Network.Packets;
+﻿using Asgard.Core.Interpolation;
+using Asgard.Core.Network.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MoveClient
+namespace Asgard.Client.Collections
 {
     public static class MathHelpers
     {
@@ -15,19 +16,7 @@ namespace MoveClient
             var r =  a + (b - a) * t;
             return r;
         }
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class InterpolationAttribute : Attribute
-    {        
-    }
-
-    public interface IInterpolationPacket<TData>
-    {
-        uint Id { get; set; }
-
-        List<TData> DataPoints { get; set; }
-    }
+    }    
 
     public class InterpolationBuffer<T, TData>
         where TData : class

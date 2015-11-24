@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MoveClient
+namespace Asgard.Client.Collections
 {
     public class CircularBuffer<T> where T : class
     {

@@ -6,12 +6,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Asgard.Core.Network;
 using System.Diagnostics;
+using Asgard.Core.Interpolation;
 
 namespace MoveServer
 {
 
     [Packet(100, NetDeliveryMethod.UnreliableSequenced)]
-    public class SnapshotPacket : Packet
+    public class SnapshotPacket : Packet, IInterpolationPacket<MoveData>
     {
         public uint Id { get; set; }
 

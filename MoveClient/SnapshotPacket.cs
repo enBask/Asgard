@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Asgard.Core.Network;
 using MoveClient;
 using System.Diagnostics;
+using Asgard.Client.Collections;
+using Asgard.Core.Interpolation;
 
 namespace MoveServer
 {   

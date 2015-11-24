@@ -17,47 +17,33 @@ namespace MoveClient
 {
     public partial class MainForm : Form
     {
-        InterpolationBuffer<SnapshotPacket, MoveData> _interpolationBuffer = 
-            new InterpolationBuffer<SnapshotPacket, MoveData>(60, 0.1f);
-        float startTime = 0.0f;
-        bool started = false;
-        float currentTime = 0.0f;
-
 
         private ChatClient.MoveClient moveClient;
-        private NetNode _serverNode;
         public MainForm()
         {
             InitializeComponent();
 
-            moveClient = new ChatClient.MoveClient("127.0.0.1", 8899);
-
-            PacketFactory.AddCallback<SnapshotPacket>(OnSnapshot);
+            moveClient = new ChatClient.MoveClient();
+            moveClient.OnSnapshot += MoveClient_OnSnapshot;
 
             var th = new Thread(() =>
             {
                 moveClient.Run();
             });
+
             th.IsBackground = true;
             th.Start();
 
 
             var th2 = new Thread(() =>
             {                
-                while(!started)
-                {
-                    Thread.Sleep(1);
-                }
 
                 var watch = Stopwatch.StartNew();
                 var s_time = watch.Elapsed.TotalSeconds;
                 while (true)
                 {
                     System.Threading.Thread.Sleep(10);
-
-                    var diff = watch.Elapsed.TotalSeconds - s_time;
-                    currentTime = startTime + (float)watch.Elapsed.TotalSeconds;
-                    Render(diff);
+                    Render();
                 }
             });
 
@@ -70,16 +56,15 @@ namespace MoveClient
             _backbuffer2 = Graphics.FromImage(_bitmap2);
 
         }
+
+
         Bitmap _bitmap, _bitmap2;
         Graphics _backbuffer, _backbuffer2;
 
-        private void Render(double diff)
+        private void Render()
         {
-            if (_serverNode == null) return;
 
-            currentTime = (float)_serverNode.GetRemoteTime(moveClient.NetTime);
-            var objects = _interpolationBuffer.Update(currentTime);
-
+            var objects = moveClient.GetInterpolationObjects();
             if (objects != null)
             {
                 var g = CreateGraphics();
@@ -103,22 +88,14 @@ namespace MoveClient
             }
         }
 
-        private void OnSnapshot(SnapshotPacket snapPacket)
+        private void MoveClient_OnSnapshot(SnapshotPacket snapPacket)
         {
-            _serverNode = snapPacket.Connection;
-            _interpolationBuffer.Add(snapPacket);
-            if (!started)
-            {
-                started = true;
-                startTime = (float)snapPacket.ReceiveTime;
-            }
-
-            lock(_backbuffer2)
+            lock (_backbuffer2)
             {
                 _backbuffer2.Clear(Color.White);
                 foreach (var obj in snapPacket.DataPoints)
                 {
-                    //_backbuffer2.FillEllipse(Brushes.Blue, (float)(obj.X * 10f)-10f, (float)(obj.Y * 10f)-10f, 20f, 20f);
+                    _backbuffer2.FillEllipse(Brushes.Blue, (float)(obj.X * 10f)-10f, (float)(obj.Y * 10f)-10f, 20f, 20f);
                 }
             }
         }
