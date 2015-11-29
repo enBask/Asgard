@@ -12,13 +12,12 @@ using Asgard.Core.Network;
 using Asgard.Core.System;
 using Asgard.Core.Network.Packets;
 using Asgard.Core.Interpolation;
+using Asgard.Core.Network.Data;
 
 namespace Asgard
 {
 
-    public class AsgardServer<TSnapshotPacket, TData> : AsgardBase
-        where TData : class
-        where TSnapshotPacket : Packet, IInterpolationPacket<TData>, new()
+    public class AsgardServer : AsgardBase      
     {
         #region Private Vars
         BifrostServer _bifrost = null;
@@ -26,7 +25,7 @@ namespace Asgard
         protected NetConfig _netConfig;
         protected PhysicsConfig _phyConfig;
 
-        float _netAccum = 0f;
+        double _netAccum = 0;
         #endregion
 
         public AsgardServer() : base()
@@ -50,19 +49,18 @@ namespace Asgard
         {
             return null;
         }
-
-        protected virtual List<TData> GetPlayerDataView(int entityId)
-        {
-            return null;
-        }
-
+       
         protected virtual NetNode GetPlayerConnection(int entityId)
         {
             return null;
         }
 
+        protected override void BeforeTick(double delta)
+        {
+            _bifrost.pumpNetwork();
+        }
 
-        protected override void Tick(float delta)
+        protected override void Tick(double delta)
         {
             _netAccum += delta;
             var invRate = 1f / _netConfig.tickrate;
@@ -84,23 +82,26 @@ namespace Asgard
 
         private void SendSnapshot()
         {
-            uint snap_id = (uint)Math.Floor(_bifrost.NetTime * _netConfig.tickrate);
-
             var players = GetPlayerList();
             if (players == null) return;
 
-            foreach(var player in players)
+            foreach(Entity nobj in ObjectMapper.GetEntityCache())
             {
-                var node = GetPlayerConnection(player);
-                if (node == null) continue;
+                var objList = ObjectMapper.GetNetObjects(nobj);
+                foreach(var obj in objList)
+                {
+                    var packet = new DataObjectPacket();
+                    packet.SetOwnerObject(obj);
+                    packet.Id = (uint)nobj.UniqueId;
 
-                var data = GetPlayerDataView(player);
-                var snapPacket = new TSnapshotPacket();
-                snapPacket.Id = snap_id;
-                snapPacket.DataPoints = data;
-                _bifrost.Send(snapPacket, node);
-            }            
+                    foreach (var player in players)
+                    {
+                        var node = GetPlayerConnection(player);
+                        if (node == null) continue;
+                        _bifrost.Send(packet, node);
+                    }
+                }
+            }                    
         }
-
     }
 }

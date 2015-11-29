@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Artemis.Manager;
+using Asgard.Core.System;
 
 namespace Asgard
 {
@@ -40,6 +41,30 @@ namespace Asgard
             }         
         }
 
+        public AsgardBase Base { get; set; }
+
+        private float _lastNetCheck;
+        private NetStats _stats;
+        public NetStats GetStats()
+        {
+            if (Peer == null || Peer.Statistics == null)
+                return null;
+
+            //if (_stats == null)
+            {
+                _lastNetCheck = (float)Lidgren.Network.NetTime.Now;
+                _stats = new NetStats();
+            }
+
+            var diff = (float)Lidgren.Network.NetTime.Now - _lastNetCheck;
+
+            _stats.BytesInPerSec = Peer.Statistics.ReceivedBytes;// / diff;
+            _stats.BytesOutPerSec = Peer.Statistics.SentBytes;// / diff;
+
+            return _stats;
+        }
+
+
         public EntityManager EntityManager
         {
             get; internal set;
@@ -54,12 +79,12 @@ namespace Asgard
             config.MaximumConnections = maxconnections;
 
             config.AcceptIncomingConnections = true;
-            config.AutoExpandMTU = true;
-            config.AutoFlushSendQueue = true;
+//             config.AutoExpandMTU = true;
             config.UseMessageRecycling = true;
-            config.SimulatedLoss = 0.02f;
-            config.SimulatedMinimumLatency = 0.05f;
-            config.SimulatedRandomLatency = 0.05f;
+
+//             config.SimulatedLoss = 0.05f;
+//             config.SimulatedMinimumLatency = 0.05f;
+//             config.SimulatedRandomLatency = 0.05f;
 
             _serverInstance = new NetServer(config);
 
@@ -67,7 +92,7 @@ namespace Asgard
         }
         #endregion
 
-        public void Tick( float tick )
+        public void Tick( double tick )
         {
 
         }
@@ -153,10 +178,10 @@ namespace Asgard
             try
             {
                 _serverInstance.Start();
-
-                _networkThread = new Thread(_networkThreadFunc);
-                _networkThread.IsBackground = true;
-                _networkThread.Start();
+// 
+//                 _networkThread = new Thread(_networkThreadFunc);
+//                 _networkThread.IsBackground = true;
+//                 _networkThread.Start();
 
                 _running = true;
             }
@@ -187,12 +212,12 @@ namespace Asgard
             return !_running;
         }
 
-        private void _networkThreadFunc()
+        internal void pumpNetwork()
         {
-            while(_running)
+            while(true)
             {
-                var message = _serverInstance.WaitMessage(100);
-                if (message == null) continue;
+                var message = _serverInstance.WaitMessage(1);
+                if (message == null) break;
 
                 switch (message.MessageType)
                 {
@@ -218,7 +243,7 @@ namespace Asgard
                         var packet = Packet.Get(message);
                         packet.Connection = (NetNode)message.SenderConnection;
                         packet.ReceiveTime = message.ReceiveTime;
-                       
+
                         PacketFactory.RaiseCallbacks(packet);
 
                         break;

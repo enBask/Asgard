@@ -1,4 +1,5 @@
 ﻿using Artemis.Manager;
+using Asgard.Core.System;
 
 namespace Asgard
 {
@@ -6,9 +7,11 @@ namespace Asgard
     {
         bool Start();
         bool Stop();
-        void Tick(float delta);
+        void Tick(double delta);
 
         EntityManager EntityManager { get;}
+
+        AsgardBase Base { get; set; } 
     }
 
     public abstract class BaseSystem : ISystem
@@ -17,6 +20,12 @@ namespace Asgard
         {
             get;
             internal set;
+        }
+
+        public AsgardBase Base
+        {
+            get;
+            set;
         }
 
         public virtual bool Start()
@@ -29,6 +38,6 @@ namespace Asgard
             return true;
         }
 
-        public abstract void Tick(float delta);
+        public abstract void Tick(double delta);
     }
 }

@@ -15,7 +15,6 @@ namespace Asgard.Core.Network
     {
         static Connection()
         {
-            Bootstrap.Init();
         }
 
         public Connection()

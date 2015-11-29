@@ -2,6 +2,7 @@
 using Asgard.Core.Network.Packets;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -22,21 +23,21 @@ namespace Asgard.Client.Collections
         where TData : class
         where T : Packet, IInterpolationPacket<TData>
     {
-        private float _tickRate = 0;
-        private float _delay = 0;
+        private double _tickRate = 0;
+        private double _delay = 0;
         private int _frameCount = 0;
         private CircularBuffer<T> _buffer = new CircularBuffer<T>(60);
 
         private static List<PropertyInfo> _properties = new List<PropertyInfo>();
         private static List<FieldInfo> _fields = new List<FieldInfo>();
 
-        float start_time = 0.0f;
+        double start_time = 0;
         bool started = false;
 
         uint start_id;
         uint end_id;
-        float interpolation_start_time;
-        float interpolation_end_time;
+        double interpolation_start_time;
+        double interpolation_end_time;
         bool is_interpolating = false;
 
         static InterpolationBuffer()
@@ -63,7 +64,7 @@ namespace Asgard.Client.Collections
             }
         }
 
-        public InterpolationBuffer(float tickRate, float delay)
+        public InterpolationBuffer(double tickRate, double delay)
         {
             _tickRate = tickRate;
             _delay = delay;
@@ -73,14 +74,16 @@ namespace Asgard.Client.Collections
         public void Add(T data)
         {
             _buffer.Add(data.Id, data);
-
-            if (!started)
-            {
-                start_time = (float)data.Connection.GetRemoteTime(data.ReceiveTime);
-                started = true;
-            }
+            started = true;
         }
-        public List<TData> Update(float time)
+
+        public T Get(uint index)
+        {
+            var snap = _buffer.Get(index);
+            return snap;
+        }
+
+        public List<TData> Update(double time)
         {
             if (!started)
             {
@@ -93,7 +96,10 @@ namespace Asgard.Client.Collections
                 return null;
             }
 
-            float id_from_start = time * _tickRate;
+            uint id = (uint)Math.Floor( time * _tickRate);
+
+
+            double id_from_start = time * _tickRate;
 
             if (is_interpolating)
             {
@@ -160,7 +166,7 @@ namespace Asgard.Client.Collections
                 return null;
             }
 
-            float t = (time - interpolation_start_time) / (interpolation_end_time - interpolation_start_time);
+            float t = (float)((time - interpolation_start_time) / (interpolation_end_time - interpolation_start_time));
             t = Math.Min(t, 1.0f);
             t = Math.Max(t, 0.0f);
 

@@ -17,7 +17,7 @@ namespace Asgard.Core.Network.Packets
     {
         public ushort PacketId { get; private set; }
 
-        public Network.NetDeliveryMethod Method { get; private set; }
+        public Network.NetDeliveryMethod Method { get; protected set; }
         public NetNode Connection
         { get; set; }
 

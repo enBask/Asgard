@@ -15,12 +15,11 @@ namespace MoveServer
         public float VelX { get; set; }
         public float VelY { get; set; }
 
-        public MoveData(float x, float y, float velx, float vely)
+        public int SnapId { get; set; }
+        public MoveData(float x, float y)
         {
             X = x;
             Y = y;
-            VelX = velx;
-            VelY = vely;
         }
     }
 }

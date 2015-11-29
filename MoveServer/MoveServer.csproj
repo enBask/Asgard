@@ -52,6 +52,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientStatePacket.cs" />
+    <Compile Include="DataObject.cs" />
     <Compile Include="LoginPacket.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

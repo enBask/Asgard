@@ -1,5 +1,6 @@
 ﻿using Artemis;
 using Artemis.System;
+using Asgard.Core.Network.Packets;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,9 +19,15 @@ namespace Asgard.Core.System
         EntityWorld _entityWorld;
         #endregion
 
+        static AsgardBase()
+        {
+            Network.Bootstrap.Init();
+        }
+
         public AsgardBase()
         {
             _entityWorld = new EntityWorld(false, true, true);
+            ObjectMapper.Init(_entityWorld.EntityManager);
         }
 
         #region system system
@@ -34,6 +41,7 @@ namespace Asgard.Core.System
             }
 
             _systems[type] = system;
+            system.Base = this;
 
             List<ISystem> systems;
             if (!_sortedSystems.TryGetValue(runOrder, out systems))
@@ -83,12 +91,17 @@ namespace Asgard.Core.System
         }
         #endregion
 
-        protected virtual void Tick(float delta)
+        protected virtual void Tick(double delta)
         {
 
         }
 
-        public void Run()
+        protected virtual void BeforeTick(double delta)
+        {
+
+        }
+
+        public virtual void Run()
         {
             foreach (var runOrder in _sortedSystems.Values)
             {
@@ -100,12 +113,14 @@ namespace Asgard.Core.System
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            float lastSecondStamp = (float)timer.Elapsed.TotalSeconds;
+            double lastSecondStamp = timer.Elapsed.TotalSeconds;
             while (true)
             {
-                var elapsedSeconds = (float)timer.Elapsed.TotalSeconds;
-                var delta = elapsedSeconds - lastSecondStamp;
+                double elapsedSeconds = timer.Elapsed.TotalSeconds;
+                double delta = elapsedSeconds - lastSecondStamp;
                 lastSecondStamp = elapsedSeconds;
+
+                BeforeTick(delta);
 
                 foreach (var runOrder in _sortedSystems.Values)
                 {

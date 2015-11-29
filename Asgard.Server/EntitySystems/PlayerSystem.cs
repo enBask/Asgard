@@ -10,6 +10,7 @@ using Asgard.Core.Network;
 using System.Collections.Concurrent;
 using Artemis.Attributes;
 using Artemis.Manager;
+using Asgard.Core.System;
 
 namespace Asgard.EntitySystems
 {
@@ -41,11 +42,15 @@ namespace Asgard.EntitySystems
             }
         }
 
-        public Entity Add(PlayerType comp, Entity owner = null)
+
+        public AsgardBase Base { get; set; }
+
+
+        public Entity Add(PlayerType comp, uint id, Entity owner = null)
         {
             if (owner == null)
             {
-                owner = EntityWorld.CreateEntity();
+                owner = ObjectMapper.CreateEntity(id);
             }
             owner.AddComponent(comp);
             return owner;
@@ -59,6 +64,7 @@ namespace Asgard.EntitySystems
                 Entity removeEntity;
                 _playerNodeLookup.TryRemove(playerComp.NetworkNode, out removeEntity);
                 player.RemoveComponent<PlayerType>();
+                ObjectMapper.DestoryEntity(player);
             }
         }
 
@@ -98,7 +104,7 @@ namespace Asgard.EntitySystems
             return true;
         }
 
-        public void Tick(float delta)
+        public void Tick(double delta)
         {
         }
         #endregion

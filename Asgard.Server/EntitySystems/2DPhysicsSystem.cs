@@ -11,15 +11,16 @@ using Artemis.Manager;
 using Asgard.EntitySystems.Components;
 using Artemis;
 using FarseerPhysics.Factories;
+using Asgard.Core.System;
 
 namespace Asgard
 {
     public class PhysicsSystem2D : EntityComponentProcessingSystem<Physics2dComponent>, ISystem
     {
-        float _stepTime = 0f;
+        double _stepTime = 0;
         ConcurrentDictionary<int, World> _Worlds = new ConcurrentDictionary<int, World>();
         int _currentWorldId=0;
-        float _deltaTime = 0f;
+        double _deltaTime = 0;
 
         public EntityManager EntityManager
         {
@@ -29,7 +30,9 @@ namespace Asgard
             }
         }
 
-        public PhysicsSystem2D(float steptime = 0.03f) // 30 TPS
+        public AsgardBase Base { get; set; }
+
+        public PhysicsSystem2D(double steptime = 0.03) // 30 TPS
         {
             _stepTime = steptime;
             _Worlds = new ConcurrentDictionary<int, World>();
@@ -71,7 +74,7 @@ namespace Asgard
 
 
 
-        public void Tick(float delta)
+        public void Tick(double delta)
         {
             _deltaTime += delta;
 
@@ -85,11 +88,11 @@ namespace Asgard
                 _deltaTime -= _stepTime;
             }
 
-            foreach (var world in _Worlds.Values)
-            {
-                for(int i =0; i < ticks; ++i)
-                    world.Step(delta);
-            }
+//             foreach (var world in _Worlds.Values)
+//             {
+//                 for(int i =0; i < ticks; ++i)
+//                     world.Step(delta);
+//             }
         }
 
         public bool Stop()

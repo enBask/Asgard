@@ -11,20 +11,30 @@ namespace MoveServer
         public float X { get; set; }
         [Interpolation]
         public float Y { get; set; }
+
         public float VelX { get; set; }
         public float VelY { get; set; }
 
-        public MoveData() : this(0,0,0,0)
+        public float position_error_X { get; set; }
+        public float position_error_Y { get; set; }
+
+        public uint SnapId { get; set; }
+        public bool Forward { get; set; }
+        public bool Back { get; set; }
+        public bool Left { get; set; }
+        public bool Right { get; set; }
+
+        public int RemoveSnapId { get; set; }
+
+        public MoveData() : this(0,0)
         {
 
         }
 
-        public MoveData(float x, float y, float velx, float vely)
+        public MoveData(float x, float y)
         {
             X = x;
             Y = y;
-            VelX = velx;
-            VelY = vely;
         }
     }
 }

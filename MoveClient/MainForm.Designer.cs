@@ -37,6 +37,8 @@
             this.ClientSize = new System.Drawing.Size(804, 602);
             this.Name = "MainForm";
             this.Text = "MainForm";
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyUp);
             this.ResumeLayout(false);
 
         }

@@ -11,7 +11,6 @@ namespace MoveClient
     {
         static void Main(string[] args)
         {
-
             var form = new MainForm();
             Application.Run(form);
         }

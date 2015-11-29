@@ -1,5 +1,6 @@
 ﻿using Asgard.Core.Network;
 using Asgard.Core.Network.Packets;
+using Asgard.Core.System;
 using Lidgren.Network;
 using System;
 using System.Collections.Concurrent;
@@ -40,6 +41,40 @@ namespace Asgard
             }
         }
 
+        public NetNode ServerConnection 
+        {
+            get
+            {
+                if (Peer == null) return null;
+                if (Peer.ConnectionsCount == 0) return null;
+                return (NetNode)Peer.Connections[0];
+            }
+        }
+
+        public AsgardBase Base {get; set;}
+
+        private float _lastNetCheck;
+        private NetStats _stats;
+        public NetStats GetStats()
+        {
+            if (Peer == null || Peer.Statistics == null || Peer.Connections.Count == 0)
+                return null;
+
+            //if (_stats == null)
+            {
+                _lastNetCheck = (float)Lidgren.Network.NetTime.Now;
+                _stats = new NetStats();
+            }
+
+            var diff = (float)Lidgren.Network.NetTime.Now - _lastNetCheck;
+
+            _stats.BytesInPerSec = Peer.Statistics.ReceivedBytes;// / diff;
+            _stats.BytesOutPerSec = Peer.Statistics.SentBytes;// / diff;
+            _stats.AvgPing = Peer.Connections[0].AverageRoundtripTime;
+
+            return _stats;
+        }
+
         public Artemis.Manager.EntityManager EntityManager
         {
             get
@@ -52,9 +87,16 @@ namespace Asgard
         {
             NetPeerConfiguration config = new NetPeerConfiguration("Asgard");
             config.AcceptIncomingConnections = false;
-            config.AutoExpandMTU = true;
-            config.AutoFlushSendQueue = true;
-            config.UseMessageRecycling = true;
+            config.DefaultOutgoingMessageCapacity = 100;
+//             config.AutoExpandMTU = true;
+             config.AutoFlushSendQueue = false;
+//             config.UseMessageRecycling = true;
+            config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
+
+            //config.SimulatedLoss = 0.1f;
+            config.SimulatedMinimumLatency = 0.05f;
+            //config.SimulatedRandomLatency = 0.05f;
+
 
 
             IPAddress address = NetUtility.Resolve(host);
@@ -62,6 +104,21 @@ namespace Asgard
             _clientInstance = new NetClient(config);
         }
 
+
+        public void Flush()
+        {
+            if (Peer != null)
+                Peer.FlushSendQueue();
+        }
+
+
+        public float GetPingTime()
+        {
+            if (Peer == null) return 0;
+            if (Peer.ConnectionsCount == 0) return 0;
+
+            return Peer.Connections[0].AverageRoundtripTime;
+        }
 
         private void OnRaiseConnectedEvent(NetConnection connection)
         {
@@ -147,9 +204,9 @@ namespace Asgard
                 _clientInstance.Start();
                 _clientInstance.Connect(_endPoint);
 
-                _networkThread = new Thread(_networkThreadFunc);
-                _networkThread.IsBackground = true;
-                _networkThread.Start();
+//                 _networkThread = new Thread(_networkThreadFunc);
+//                 _networkThread.IsBackground = true;
+//                 _networkThread.Start();
 
                 _running = true;
             }
@@ -180,12 +237,12 @@ namespace Asgard
             return !_running;
         }
 
-        private void _networkThreadFunc()
+        internal void pumpNetwork()
         {
-            while (_running)
+            while (true)
             {
-                var message = _clientInstance.WaitMessage(100);
-                if (message == null) continue;
+                var message = _clientInstance.WaitMessage(1);
+                if (message == null) break;
 
                 switch (message.MessageType)
                 {
@@ -194,6 +251,9 @@ namespace Asgard
                     case NetIncomingMessageType.WarningMessage:
                     case NetIncomingMessageType.ErrorMessage:
                         //log
+                        break;
+                    case NetIncomingMessageType.ConnectionLatencyUpdated:
+                        Asgard.Core.Network.NetTime.SetSimTime(message.SenderConnection.RemoteTimeOffset);
                         break;
                     case NetIncomingMessageType.StatusChanged:
                         NetConnectionStatus status = (NetConnectionStatus)message.ReadByte();
@@ -223,7 +283,7 @@ namespace Asgard
             }
         }
 
-        public void Tick(float delta)
+        public void Tick(double delta)
         {
         }
         #endregion

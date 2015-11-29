@@ -18,7 +18,12 @@ namespace Asgard.Core.Network
 
         public double GetRemoteTime(double localTime)
         {
-            return _connection.GetRemoteTime(localTime) - (_connection.AverageRoundtripTime/2.0);
+            return _connection.GetRemoteTime(localTime) - (_connection.AverageRoundtripTime/1.0);
+        }
+
+        public double GetLocalTime(double remoteTime)
+        {
+            return _connection.GetLocalTime(remoteTime) + (_connection.AverageRoundtripTime / 1.0);
         }
 
         public static implicit operator NetConnection(NetNode node)

@@ -12,10 +12,27 @@ using FarseerPhysics.Collision.Shapes;
 using Artemis;
 using Artemis.Utils;
 using Asgard.Core.Network;
+using Asgard.Core.System;
+using Asgard.Core.Network.Data;
 
 namespace MoveServer
 {
-    public class MoveServer : AsgardServer<SnapshotPacket, MoveData>
+
+    public static class LogHelper
+    {
+        private static string _lastLog;
+        public static void Log(string data, string cat="")
+        {
+            if (data == _lastLog)
+                return;
+
+            _lastLog = data;
+
+            System.Diagnostics.Trace.WriteLine(data, cat);
+        }
+    }
+
+    public class MoveServer : AsgardServer
     {
         BifrostServer _bifrost;
         PlayerSystem<PlayerData> _playerSys;
@@ -27,13 +44,117 @@ namespace MoveServer
             AddEntitySystem(_playerSys);
 
             PacketFactory.AddCallback<MoveLoginPacket>(OnLogin);
+            PacketFactory.AddCallback<ClientStatePacket>(OnClientState);
         }
 
+        protected override void BeforeTick(double delta)
+        {
+            base.BeforeTick(delta);
+        }
+
+        double _accum = 0;
+        double _InvtickRate = 1.0 / 60.0;
+        protected override void Tick(double delta)
+        {
+            base.Tick(delta);
+
+            _accum += delta;
+            if (_accum >= _InvtickRate)
+            {
+                var ticks = 0;
+                var time = NetTime.RealTime;
+                while (_accum >= _InvtickRate)
+                {
+                    _accum -= _InvtickRate;
+
+                    tickPhysics(_InvtickRate, time + (_InvtickRate * ticks));
+                    ticks++;
+                }
+            }
+
+        }
+
+        private void tickPhysics(double delta, double time)
+        {
+            NetTime.SimTick++;
+            var players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
+            foreach (var player in players)
+            {
+                var phyComp = player.GetComponent<Physics2dComponent>();
+                if (phyComp == null || phyComp.Body == null) continue;
+                var playerData = player.GetComponent<PlayerData>();
+                var StateData = playerData.GetNextState();
+                if (StateData == null) continue;
+
+                float x = 0f;
+                float y = 0f;
+                float speed = 100f;
+                if (StateData.Forward)
+                {
+                    y = -speed;
+                }
+                if (StateData.Back)
+                {
+                    y = speed;
+                }
+
+                if (StateData.Right)
+                {
+                    x = speed;
+                }
+                if (StateData.Left)
+                {
+                    x = -speed;
+                }
+
+                var addX = (float)(x * delta);
+                var addY = (float)(y * delta);
+                phyComp.Body.Position += new Vector2(addX, addY);
+                phyComp.Body.LinearVelocity = new Vector2(x, y);
+
+                var dObject = player.GetComponent<DataObject>();
+                if (dObject != null)
+                {
+                    dObject.X = phyComp.Body.Position.X;
+                    dObject.Y = phyComp.Body.Position.Y;
+                    dObject.VelX = x;
+                    dObject.VelY = y;
+                }
+
+                // 
+                //                  LogHelper.Log("Tick(" + NetTime.SimTick + ") =>" +
+                //                      phyComp.Body.Position.X + "," + phyComp.Body.Position.Y 
+                //                      +"," + addX+","+ addY + "-" + StateData.Y, "Server");
+            }
+        }
+
+        private Dictionary<uint, int> _snapOffsets = new Dictionary<uint, int>();
+        private void OnClientState(ClientStatePacket clientState)
+        {
+            var conn = clientState.Connection;
+            var player = _playerSys.Get(conn);
+            if (player == null) return;
+
+            var phyComp = player.GetComponent<Physics2dComponent>();
+            if (phyComp == null || phyComp.Body == null) return;
+
+
+            phyComp.Body.UserData = clientState;
+            var playerComp = player.GetComponent<PlayerData>();
+
+            foreach (var inp in clientState.State)
+            {
+                var l = new List<PlayerStateData>();
+                l.Add(inp);
+                playerComp.InputBuffer.Add(l);
+            }           
+
+        }
 
         private void OnLogin(MoveLoginPacket packet)
         {
             var conn = packet.Connection;
-            var playerEntity = _playerSys.Add(new PlayerData(networkNode: conn));
+            var playerEntity = _playerSys.Add(new PlayerData(networkNode: conn), 1);
 
             var phyData = new Physics2dComponent();
             phyData.WorldID = _worldId;
@@ -45,6 +166,9 @@ namespace MoveServer
             phyData.Shapes.Add(shape);
 
             playerEntity.AddComponent(phyData);
+
+            var dObject = (DataObject)ObjectMapper.Create((uint)playerEntity.UniqueId, typeof(DataObject));
+
         }
 
         private void _bifrost_OnDisconnect(Asgard.Core.Network.NetNode connection)
@@ -108,24 +232,49 @@ namespace MoveServer
             return node;
         }
 
-        protected override List<MoveData> GetPlayerDataView(int entityId)
-        {
-            List<MoveData> moveDataSet = new List<MoveData>();
-
-            Bag<Entity> players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
-            foreach(var player in players)
-            {
-                var phyData = player.GetComponent<Physics2dComponent>();
-                if (phyData == null || phyData.Body == null) continue;
-
-                var moveData = new MoveData(phyData.Body.Position.X, phyData.Body.Position.Y, 0f, 0f);
-                moveData.Id = entityId;
-
-                moveDataSet.Add(moveData);
-            }
-
-            return moveDataSet;
-        }
+//         protected override List<MoveData> GetPlayerDataView(int entityId)
+//         {
+//             List<MoveData> moveDataSet = new List<MoveData>();
+// 
+//             Bag<Entity> players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
+// 
+//             var thisPlayer = _playerSys.EntityManager.GetEntity(entityId);
+//             var phyData = thisPlayer.GetComponent<Physics2dComponent>();
+//             if (phyData != null && phyData.Body != null)
+//             {
+//                 int snap_id = 0;
+//                 if (!_snapOffsets.TryGetValue(NetTime.SimTick, out snap_id))
+//                     snap_id = (int)NetTime.SimTick;
+// 
+//                 var moveData = new MoveData(phyData.Body.Position.X, phyData.Body.Position.Y);
+//                 moveData.VelX = phyData.Body.LinearVelocity.X;
+//                 moveData.VelY = phyData.Body.LinearVelocity.Y;
+//                 moveData.Id = entityId;
+//                 moveData.SnapId = snap_id;
+//                 moveDataSet.Add(moveData);
+// 
+// 
+// 
+// //                 LogHelper.Log("ClientSend(" + sim_id + ") =>" +
+// //                     snap_id, "Server");
+//             }
+// 
+//             foreach (var player in players)
+//             {
+//                 if (thisPlayer == player) continue;
+//                 phyData = player.GetComponent<Physics2dComponent>();
+//                 if (phyData == null || phyData.Body == null) continue;
+// 
+//                 var moveData = new MoveData(phyData.Body.Position.X, phyData.Body.Position.Y);
+//                 moveData.VelX = phyData.Body.LinearVelocity.X;
+//                 moveData.VelY = phyData.Body.LinearVelocity.Y;
+//                 moveData.Id = player.Id;
+// 
+//                 moveDataSet.Add(moveData);
+//             }
+// 
+//             return moveDataSet;
+//         }
 
     }
 }

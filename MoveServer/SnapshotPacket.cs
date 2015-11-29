@@ -25,7 +25,7 @@ namespace MoveServer
         public override void Serialize(Bitstream msg)
         {
             msg.Write((int)Id);
-            msg.Write(DataPoints.Count);
+            msg.Write((ushort)DataPoints.Count);
             foreach (var point in DataPoints)
             {
                 msg.Write(point.Id);
@@ -33,6 +33,7 @@ namespace MoveServer
                 msg.Write(point.Y);
                 msg.Write(point.VelX);
                 msg.Write(point.VelY);
+                msg.Write(point.SnapId);
             }
 
         }

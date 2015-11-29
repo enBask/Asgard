@@ -23,7 +23,7 @@ namespace MoveServer
         public override void Deserialize(Bitstream msg)
         {
             Id = (uint)msg.ReadInt32();
-            var count = msg.ReadInt32();
+            var count = msg.ReadUInt16();
             DataPoints = new List<MoveData>(count);
 
             for (int i = 0; i < count; ++i)
@@ -34,6 +34,7 @@ namespace MoveServer
                 data.Y = msg.ReadFloat();
                 data.VelX = msg.ReadFloat();
                 data.VelY = msg.ReadFloat();
+                data.RemoveSnapId = msg.ReadInt32();
                 DataPoints.Add(data);
             }
         }

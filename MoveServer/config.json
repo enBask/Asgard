@@ -6,6 +6,6 @@
   },
   "physics": {
     "type": "2d",
-    "tickrate": 60
+    "tickrate": 30
   }
 }
