@@ -15,6 +15,5 @@ namespace MoveServer
 
         public NetworkProperty<float> VelX { get; set; }
         public NetworkProperty<float> VelY { get; set; }
-
     }
 }

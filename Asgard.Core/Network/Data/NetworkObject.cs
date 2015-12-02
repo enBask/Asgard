@@ -79,6 +79,13 @@ namespace Asgard.Core.Network.Data
             p.Value = data;
             return p;
         }
+        public static implicit operator T (NetworkProperty<T> data)
+        {
+            if (data == null)
+                return default(T);
+
+            return data.Value;
+        }
 
         public override string ToString()
         {

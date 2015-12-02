@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Asgard.Core</RootNamespace>
     <AssemblyName>Asgard.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -48,6 +49,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -59,6 +61,10 @@
     <Compile Include="Collections\InerpolationBuffer.cs" />
     <Compile Include="Collections\JitterBuffer.cs" />
     <Compile Include="Collections\LinkedList.cs" />
+    <Compile Include="Physics\AABB.cs" />
+    <Compile Include="Physics\Body.cs" />
+    <Compile Include="Physics\BodyDefinition.cs" />
+    <Compile Include="Physics\Midgard.cs" />
     <Compile Include="Network\Connection.cs" />
     <Compile Include="Network\Bitstream.cs" />
     <Compile Include="Network\Bootstrap.cs" />
@@ -79,6 +85,8 @@
     <Compile Include="System\AsgardBase.cs" />
     <Compile Include="System\ISystem.cs" />
     <Compile Include="System\ObjectMapper.cs" />
+    <Compile Include="System\PlayerComponent.cs" />
+    <Compile Include="System\PlayerStateData.cs" />
     <Compile Include="Utils\Config.cs" />
     <Compile Include="Utils\AssemblyScanner.cs" />
     <Compile Include="Utils\NetworkObjectBuilder.cs" />
@@ -87,6 +95,7 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

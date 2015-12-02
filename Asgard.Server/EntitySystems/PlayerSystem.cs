@@ -19,8 +19,7 @@ namespace Asgard.EntitySystems
 
     }
 
-    public class PlayerSystem<PlayerType> : EntityComponentProcessingSystem<PlayerType>, ISystem
-        where PlayerType : PlayerComponent
+    public class PlayerSystem : EntityComponentProcessingSystem<PlayerComponent>, ISystem
     {
         ConcurrentDictionary<NetNode, Entity> _playerNodeLookup = 
             new ConcurrentDictionary<NetNode, Entity>();
@@ -46,7 +45,7 @@ namespace Asgard.EntitySystems
         public AsgardBase Base { get; set; }
 
 
-        public Entity Add(PlayerType comp, uint id, Entity owner = null)
+        public Entity Add(PlayerComponent comp, uint id, Entity owner = null)
         {
             if (owner == null)
             {
@@ -58,12 +57,12 @@ namespace Asgard.EntitySystems
 
         public new void Remove(Entity player)
         {
-            var playerComp = player.GetComponent<PlayerType>();
+            var playerComp = player.GetComponent<PlayerComponent>();
             if (playerComp != null)
             {
                 Entity removeEntity;
                 _playerNodeLookup.TryRemove(playerComp.NetworkNode, out removeEntity);
-                player.RemoveComponent<PlayerType>();
+                player.RemoveComponent<PlayerComponent>();
                 ObjectMapper.DestoryEntity(player);
             }
         }
@@ -76,14 +75,15 @@ namespace Asgard.EntitySystems
         }
 
         #region EntitySystem
-        public override void Process(Entity entity, PlayerType playerComp)
+        public override void Process(Entity entity, PlayerComponent playerComp)
         {         
                
         }
 
         public override void OnAdded(Entity entity)
         {
-            var playerComp = entity.GetComponent<PlayerType>();
+            var playerComp = entity.GetComponent<PlayerComponent>();
+            if (playerComp.NetworkNode == null) return;
             _playerNodeLookup.TryAdd(playerComp.NetworkNode, entity);
         }
 

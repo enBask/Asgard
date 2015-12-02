@@ -93,7 +93,7 @@ namespace Asgard
 //             config.UseMessageRecycling = true;
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
 
-            //config.SimulatedLoss = 0.1f;
+            config.SimulatedLoss = 0.01f;
             config.SimulatedMinimumLatency = 0.05f;
             //config.SimulatedRandomLatency = 0.05f;
 

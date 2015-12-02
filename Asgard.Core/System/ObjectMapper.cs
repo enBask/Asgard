@@ -97,6 +97,12 @@ namespace Asgard.Core.System
             {
                 objList.Add(comp);
             }
+            else
+            {
+                objList = new List<NetworkObject>();
+                objList.Add(comp);
+                _netObjectCache[entity] = objList;
+            }
 
             if (_inSnapshot && comp != null)
             {

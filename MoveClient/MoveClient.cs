@@ -1,15 +1,12 @@
 ﻿using Asgard;
-using Asgard.Client.Collections;
 using Asgard.Core.Network;
 using Asgard.Core.Network.Packets;
+using Asgard.Core.System;
 using ChatServer;
 using MoveClient;
 using MoveServer;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ChatClient
 {
@@ -35,7 +32,7 @@ namespace ChatClient
 
         BifrostClient _bifrost;
 
-        public PlayerStateData PlayerState { get; set; }
+        public Asgard.Core.System.PlayerStateData PlayerState { get; set; }
         Asgard.Core.Collections.LinkedList<MoveData> _playerBuffer = new Asgard.Core.Collections.LinkedList<MoveData>();
 
         public List<MoveData> _objects = new List<MoveData>();
@@ -51,6 +48,11 @@ namespace ChatClient
             _bifrost.OnDisconnect += ChatClient_OnDisconnect;
             _bifrost.OnConnection += ChatClient_OnConnection;
             PacketFactory.AddCallback<LoginResponsePacket>(OnLoginResult);
+        }
+
+        public void PumpNetwork(bool pump)
+        {
+            _pumpNetwork = pump;
         }
 
         public Asgard.Core.Collections.LinkedList<MoveData> PlayerBuffer { get { return _playerBuffer; } }
@@ -83,20 +85,20 @@ namespace ChatClient
 
         protected override ClientStatePacket GetClientState()
         {
-            var md = new MoveData(PlayerState.X, PlayerState.Y)
-            {
-                Forward = PlayerState.Forward,
-                Back = PlayerState.Back,
-                Right = PlayerState.Right,
-                Left = PlayerState.Left,
-                SnapId = NetTime.SimTick
-            };
-            _playerBuffer.AddToTail(md);
+//             var md = new MoveData(PlayerState.PosX, PlayerState.Y)
+//             {
+//                 Forward = PlayerState.Forward,
+//                 Back = PlayerState.Back,
+//                 Right = PlayerState.Right,
+//                 Left = PlayerState.Left,
+//                 SnapId = NetTime.SimTick
+//             };
+//             _playerBuffer.AddToTail(md);
 
             var mSystem = LookupSystem<MoverSystem>();
 
             ClientStatePacket packet = new ClientStatePacket();
-            packet.State = new List<PlayerStateData>(mSystem.StateList);
+            packet.State = new List<Asgard.Core.System.PlayerStateData>(mSystem.StateList);
             mSystem.StateList.Clear();
             packet.SnapId = (int)NetTime.SimTick;
 

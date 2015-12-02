@@ -1,10 +1,12 @@
 ﻿using Artemis;
 using Artemis.System;
 using Asgard.Core.Network.Packets;
+using Asgard.Core.Physics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,10 +15,11 @@ namespace Asgard.Core.System
 {
     public class AsgardBase
     {
-        #region prviate vars
+        #region private vars
         Dictionary<Type, ISystem> _systems = new Dictionary<Type, ISystem>();
         SortedList<int, List<ISystem>> _sortedSystems = new SortedList<int, List<ISystem>>();
         EntityWorld _entityWorld;
+        Midgard _midgard;
         #endregion
 
         static AsgardBase()
@@ -28,6 +31,9 @@ namespace Asgard.Core.System
         {
             _entityWorld = new EntityWorld(false, true, true);
             ObjectMapper.Init(_entityWorld.EntityManager);
+
+            _midgard = new Midgard(new AABB(new Vector2(0f,0f), new Vector2(80f,60f)), 60);
+            AddInternalSystem(_midgard, 0);
         }
 
         #region system system

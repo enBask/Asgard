@@ -1,21 +1,31 @@
-﻿using Asgard.EntitySystems.Components;
+﻿using Artemis;
+using Artemis.Attributes;
+using Artemis.Interface;
+using Asgard.Core.Collections;
+using Asgard.Core.Network;
+using Asgard.Core.Physics;
+using Asgard.Core.System;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Asgard.Core.Network;
-using Asgard.Client.Collections;
 
-namespace MoveServer
+namespace Asgard.EntitySystems.Components
 {
-    public class PlayerData : PlayerComponent
+    public class PlayerComponent : IComponent
     {
+        public NetNode NetworkNode { get; set; }
+        public Body Body { get; set; }
+
         public JitterBuffer<PlayerStateData> InputBuffer { get; set; }
         public PlayerStateData CurrentState { get; set; }
-        public PlayerData(NetNode networkNode) : base(networkNode)
+
+
+        public PlayerComponent(NetNode networkNode)
         {
-            InputBuffer = new JitterBuffer<PlayerStateData>(60f);
+            NetworkNode = networkNode;
+            InputBuffer = new JitterBuffer<PlayerStateData>(30);
         }
 
         public PlayerStateData GetNextState()
@@ -24,10 +34,6 @@ namespace MoveServer
             if (states != null && states.Count > 0)
             {
                 CurrentState = states[0];
-            }
-            else
-            {
-                LogHelper.Log("empty buffer");
             }
 
             return CurrentState;

@@ -13,6 +13,7 @@ using Asgard.Core.System;
 using Asgard.Core.Network.Packets;
 using Asgard.Core.Interpolation;
 using Asgard.Core.Network.Data;
+using Asgard.Core.Physics;
 
 namespace Asgard
 {
@@ -40,9 +41,6 @@ namespace Asgard
 
             _bifrost = new BifrostServer(_netConfig.Port, _netConfig.MaxConnections);
             AddInternalSystem<BifrostServer>(_bifrost, 0);
-
-            var physics = new PhysicsSystem2D( 1f / _phyConfig.tickrate );
-            AddEntitySystem<PhysicsSystem2D>(physics);
         }
 
         protected virtual IEnumerable<int> GetPlayerList()
@@ -62,7 +60,7 @@ namespace Asgard
 
         protected override void Tick(double delta)
         {
-            _netAccum += delta;
+            _netAccum += delta;            
             var invRate = 1f / _netConfig.tickrate;
             if (_netAccum >= invRate)
             {
@@ -78,6 +76,8 @@ namespace Asgard
                     SendSnapshot();
                 }
             }
+
+            
         }
 
         private void SendSnapshot()

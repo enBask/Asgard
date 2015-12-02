@@ -1,19 +1,17 @@
 ﻿using Asgard;
 using Asgard.Core.Network.Packets;
+using Asgard.Core.System;
 using Asgard.EntitySystems;
 using ChatServer;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Artemis.Manager;
-using Microsoft.Xna.Framework;
 using Asgard.EntitySystems.Components;
-using FarseerPhysics.Collision.Shapes;
 using Artemis;
 using Artemis.Utils;
 using Asgard.Core.Network;
 using Asgard.Core.System;
-using Asgard.Core.Network.Data;
+using System.Numerics;
+using Asgard.Core.Physics;
 
 namespace MoveServer
 {
@@ -35,12 +33,12 @@ namespace MoveServer
     public class MoveServer : AsgardServer
     {
         BifrostServer _bifrost;
-        PlayerSystem<PlayerData> _playerSys;
+        PlayerSystem _playerSys;
         int _worldId;
 
         public MoveServer()
         {
-            _playerSys = new PlayerSystem<PlayerData>();
+            _playerSys = new PlayerSystem();
             AddEntitySystem(_playerSys);
 
             PacketFactory.AddCallback<MoveLoginPacket>(OnLogin);
@@ -52,95 +50,33 @@ namespace MoveServer
             base.BeforeTick(delta);
         }
 
-        double _accum = 0;
-        double _InvtickRate = 1.0 / 60.0;
         protected override void Tick(double delta)
         {
             base.Tick(delta);
 
-            _accum += delta;
-            if (_accum >= _InvtickRate)
+            var players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
+            foreach(var player in players)
             {
-                var ticks = 0;
-                var time = NetTime.RealTime;
-                while (_accum >= _InvtickRate)
-                {
-                    _accum -= _InvtickRate;
-
-                    tickPhysics(_InvtickRate, time + (_InvtickRate * ticks));
-                    ticks++;
-                }
-            }
-
-        }
-
-        private void tickPhysics(double delta, double time)
-        {
-            NetTime.SimTick++;
-            var players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
-            foreach (var player in players)
-            {
-                var phyComp = player.GetComponent<Physics2dComponent>();
-                if (phyComp == null || phyComp.Body == null) continue;
-                var playerData = player.GetComponent<PlayerData>();
-                var StateData = playerData.GetNextState();
-                if (StateData == null) continue;
-
-                float x = 0f;
-                float y = 0f;
-                float speed = 100f;
-                if (StateData.Forward)
-                {
-                    y = -speed;
-                }
-                if (StateData.Back)
-                {
-                    y = speed;
-                }
-
-                if (StateData.Right)
-                {
-                    x = speed;
-                }
-                if (StateData.Left)
-                {
-                    x = -speed;
-                }
-
-                var addX = (float)(x * delta);
-                var addY = (float)(y * delta);
-                phyComp.Body.Position += new Vector2(addX, addY);
-                phyComp.Body.LinearVelocity = new Vector2(x, y);
-
+                var pComp = player.GetComponent<PlayerComponent>();
                 var dObject = player.GetComponent<DataObject>();
                 if (dObject != null)
                 {
-                    dObject.X = phyComp.Body.Position.X;
-                    dObject.Y = phyComp.Body.Position.Y;
-                    dObject.VelX = x;
-                    dObject.VelY = y;
+                    dObject.X = pComp.Body.Position.X;
+                    dObject.Y = pComp.Body.Position.Y;
+                    dObject.VelX = pComp.Body.LinearVelocity.X;
+                    dObject.VelY = pComp.Body.LinearVelocity.Y;
                 }
-
-                // 
-                //                  LogHelper.Log("Tick(" + NetTime.SimTick + ") =>" +
-                //                      phyComp.Body.Position.X + "," + phyComp.Body.Position.Y 
-                //                      +"," + addX+","+ addY + "-" + StateData.Y, "Server");
             }
+
         }
 
-        private Dictionary<uint, int> _snapOffsets = new Dictionary<uint, int>();
         private void OnClientState(ClientStatePacket clientState)
         {
             var conn = clientState.Connection;
             var player = _playerSys.Get(conn);
             if (player == null) return;
 
-            var phyComp = player.GetComponent<Physics2dComponent>();
-            if (phyComp == null || phyComp.Body == null) return;
-
-
-            phyComp.Body.UserData = clientState;
-            var playerComp = player.GetComponent<PlayerData>();
+            var playerComp = player.GetComponent<PlayerComponent>();
 
             foreach (var inp in clientState.State)
             {
@@ -154,20 +90,34 @@ namespace MoveServer
         private void OnLogin(MoveLoginPacket packet)
         {
             var conn = packet.Connection;
-            var playerEntity = _playerSys.Add(new PlayerData(networkNode: conn), 1);
+            var playerData = new PlayerComponent(networkNode: conn);
+            var playerEntity = _playerSys.Add(playerData, 1);
 
-            var phyData = new Physics2dComponent();
-            phyData.WorldID = _worldId;
-            phyData.StartingPosition = new Vector2(40f, 30f);
-            phyData.BodyType = FarseerPhysics.Dynamics.BodyType.Dynamic;
-            phyData.StartingRestitution = 1.0f;
+            BodyDefinition bodyDefinition = 
+                new BodyDefinition() { Position = new Vector2(40f, 30f) };
 
-            var shape = new CircleShape(1f, 0.001f);
-            phyData.Shapes.Add(shape);
-
-            playerEntity.AddComponent(phyData);
-
+            var midgard = LookupSystem<Midgard>();
+            var body = midgard.CreateBody(bodyDefinition);
+            playerData.Body = body;
+            body.UserData = playerEntity;
             var dObject = (DataObject)ObjectMapper.Create((uint)playerEntity.UniqueId, typeof(DataObject));
+
+            {
+                var pd = new PlayerComponent(null);
+                var pe = midgard.EntityManager.Create(2);
+                pe.AddComponent(pd);
+                bodyDefinition =
+                new BodyDefinition()
+                {
+                    Position = new Vector2(0f, 0f),
+                    LinearVelocity = new Vector2(2f, 2f)             
+                };
+
+                body = midgard.CreateBody(bodyDefinition);
+                pd.Body = body;
+                body.UserData = pe;
+                dObject = (DataObject)ObjectMapper.Create((uint)pe.UniqueId, typeof(DataObject));
+            }
 
         }
 
@@ -181,33 +131,10 @@ namespace MoveServer
         }
 
 
-        Entity _box;
         public bool Start()
         {
             _bifrost = LookupSystem<BifrostServer>();
-            _bifrost.OnDisconnect += _bifrost_OnDisconnect;
-
-            var physicsSys = LookupSystem<PhysicsSystem2D>();
-            _worldId = physicsSys.CreateWorld(new Vector2(0f, 0f));
-
-            var world = physicsSys.GetWorld(_worldId);
-            _box = physicsSys.EntityManager.Create();
-            var physComp = new Physics2dComponent();
-            physComp.BodyType = FarseerPhysics.Dynamics.BodyType.Static;
-            physComp.StartingRestitution = 1.0f;
-
-            EdgeShape es1 = new EdgeShape(new Vector2(0, 0), new Vector2(80f, 0f));
-            EdgeShape es2 = new EdgeShape(new Vector2(80f, 0f), new Vector2(80f, 60f));
-            EdgeShape es3 = new EdgeShape(new Vector2(80f, 60f), new Vector2(0, 60f));
-            EdgeShape es4 = new EdgeShape(new Vector2(0, 60f), new Vector2(0f, 0f));
-
-            physComp.Shapes.Add(es1);
-            physComp.Shapes.Add(es2);
-            physComp.Shapes.Add(es3);
-            physComp.Shapes.Add(es4);
-
-            _box.AddComponent(physComp);
-            
+            _bifrost.OnDisconnect += _bifrost_OnDisconnect;            
             return true;
         }
 
@@ -218,7 +145,7 @@ namespace MoveServer
 
         protected override IEnumerable<int> GetPlayerList()
         {
-            Bag<Entity> players =_playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerData)));
+            Bag<Entity> players =_playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
 
             IEnumerable<int> playerIds = players.Select(e => e.Id);
             return playerIds;
@@ -227,7 +154,7 @@ namespace MoveServer
         protected override NetNode GetPlayerConnection(int entityId)
         {
             Entity player = _playerSys.EntityManager.GetEntity(entityId);
-            var playerData = player.GetComponent<PlayerData>();
+            var playerData = player.GetComponent<PlayerComponent>();
             var node = playerData.NetworkNode;
             return node;
         }

@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asgard.Client.Collections
+namespace Asgard.Core.Collections
 {
     public class JitterBuffer<T>
         where T : class

@@ -173,7 +173,7 @@ namespace Asgard.Core.Network.Data
         {
             ObjectMapper.AddRawType(type);
 
-            bool isUnreliable = (type.AsType() == typeof(UnreliableNetworkObject));
+            bool isUnreliable = type.IsSubclassOf(typeof(UnreliableNetworkObject));
 
             DataSerializationItem dataItem = new DataSerializationItem();
             dataItem.IsUnreliable = isUnreliable;

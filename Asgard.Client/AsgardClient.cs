@@ -3,6 +3,7 @@ using Artemis.Interface;
 using Artemis.Manager;
 using Asgard.Client.Collections;
 using Asgard.Client.Network;
+using Asgard.Core.Collections;
 using Asgard.Core.Interpolation;
 using Asgard.Core.Network;
 using Asgard.Core.Network.Data;
@@ -23,6 +24,8 @@ namespace Asgard.Client
         where TClientData: Packet
         where TSnapshotPacket: Packet, IInterpolationPacket<TData>
     {
+
+        protected bool _pumpNetwork = true;
 
         public delegate void AsgardClientCallback();
         public delegate void SnapshotCallback(TSnapshotPacket snapshot);
@@ -63,7 +66,8 @@ namespace Asgard.Client
         {
             ObjectMapper.StartSnapshot();
 
-            _bifrost.pumpNetwork();
+            if (_pumpNetwork)
+                _bifrost.pumpNetwork();
 
             var netObjects = ObjectMapper.EndSnapshot();
             if (netObjects.Count > 0)
@@ -128,8 +132,6 @@ namespace Asgard.Client
                         var ditem = DataLookupTable.Get(objType.GetTypeInfo());
                         ditem.Merge(objA, objB);
                     }
-
-
                 }
             }     
         }

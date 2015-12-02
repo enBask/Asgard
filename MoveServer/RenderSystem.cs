@@ -11,7 +11,7 @@ using System.Drawing.Imaging;
 namespace MoveServer
 {
     [ArtemisEntitySystem(ExecutionType = Artemis.Manager.ExecutionType.Synchronous, GameLoopType = Artemis.Manager.GameLoopType.Update, Layer = 10)]
-    public class RenderSystem : EntityComponentProcessingSystem<Physics2dComponent>
+    public class RenderSystem : EntityComponentProcessingSystem<PlayerComponent>
     {
         Graphics _targetGraphics;
         Graphics _textLayer;
@@ -72,12 +72,9 @@ namespace MoveServer
             _backBuffer.Clear(Color.White);
         }
 
-        public override void Process(Entity entity, Physics2dComponent component1)
+        public override void Process(Entity entity, PlayerComponent component1)
         {
-            if (component1.Body == null) return;
-
-            var playerComp = entity.GetComponent<PlayerData>();
-            if (playerComp != null)
+            if (component1 != null)
             {
                 var body = component1.Body;
 //                 if (Math.Abs(body.LinearVelocity.X) <= 00.1 && Math.Abs(body.LinearVelocity.Y) <= 00.1)
@@ -86,19 +83,6 @@ namespace MoveServer
 //                 }
 
                 _backBuffer.FillEllipse(Brushes.Red, (float)(component1.Body.Position.X * 10f) - 10f, (float)(component1.Body.Position.Y * 10f) - 10f, 20f, 20f);
-            }
-
-            foreach (var shape in component1.Shapes)
-            {
-                if (shape is EdgeShape)
-                {
-                    var edge = (shape as EdgeShape);
-
-                    _backBuffer.DrawLine(new Pen(Brushes.Black, 3),
-                        new Point((int)(edge.Vertex1.X*10f), (int)(edge.Vertex1.Y * 10f)),
-                        new Point((int)(edge.Vertex2.X * 10f), (int)(edge.Vertex2.Y * 10f)));
-
-                }
             }
 
         }

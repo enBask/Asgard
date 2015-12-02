@@ -1,22 +1,14 @@
 ﻿using Artemis;
 using Asgard;
-using Asgard.Client.Collections;
-using Asgard.Core.Network;
-using Asgard.Core.Network.Packets;
 using Asgard.Core.System;
-using ChatClient;
-using MoveServer;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
-using System.Text;
+using System.Numerics;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MoveClient
@@ -36,8 +28,7 @@ namespace MoveClient
             moveClient.OnTick += MoveClient_OnTick;
             moveClient.OnSnapshot += MoveClient_OnSnapshot;
             moveClient.PlayerState = new PlayerStateData();
-            moveClient.PlayerState.X = 40;
-            moveClient.PlayerState.Y = 30;
+            moveClient.PlayerState.Position = new Vector2(40f,30f);
 
             var moveSys = moveClient.LookupSystem<MoverSystem>();
             moveSys.StateData = moveClient.PlayerState;
@@ -131,6 +122,15 @@ namespace MoveClient
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.KeyCode == Keys.P)
+            {
+                moveClient.PumpNetwork(false);
+            }
+            if (e.KeyCode == Keys.O)
+            {
+                moveClient.PumpNetwork(true);
+            }
+
             bool bChanged = false;
             if (e.KeyCode == Keys.Up)
             {
@@ -179,7 +179,7 @@ namespace MoveClient
             }
         }
 
-        Dictionary<int, MoveData> _objects = new Dictionary<int, MoveData>();
+        Dictionary<int, MoveServer.MoveData> _objects = new Dictionary<int, MoveServer.MoveData>();
         private void Render()
         {           
             {
@@ -201,8 +201,8 @@ namespace MoveClient
                         _backbuffer.FillEllipse(Brushes.Red, ((obj.X + obj.position_error_X) * 10f) - 10f, ((obj.Y + obj.position_error_Y) * 10f) - 10f, 20f, 20f);
                     }
 
-                    var xDiff = Math.Abs(moveClient.PlayerState.RenderX - moveClient.PlayerState.X);
-                    var yDiff = Math.Abs(moveClient.PlayerState.RenderY - moveClient.PlayerState.Y);
+//                     var xDiff = Math.Abs(moveClient.PlayerState.RenderX - moveClient.PlayerState.X);
+//                     var yDiff = Math.Abs(moveClient.PlayerState.RenderY - moveClient.PlayerState.Y);
 
 //                     if ( (xDiff >= 2.0f || yDiff >= 2.0f) 
 //                         )
@@ -218,8 +218,8 @@ namespace MoveClient
 //                             moveClient.PlayerState.Y, 0.2f);
 //                     }
 
-                    _backbuffer.FillEllipse(Brushes.Green, (moveClient.PlayerState.X * 10f) - 10f,
-                        (moveClient.PlayerState.Y * 10f) - 10f, 20f, 20f);
+                    _backbuffer.FillEllipse(Brushes.Green, (moveClient.PlayerState.Position.X * 10f) - 10f,
+                        (moveClient.PlayerState.Position.Y * 10f) - 10f, 20f, 20f);
 
 
                     var moveSys = moveClient.LookupSystem<MoverSystem>();
@@ -245,7 +245,7 @@ namespace MoveClient
             moveClient.PlayerState.Right = _localState.Right;
         }
 
-        private void MoveClient_OnSnapshot(SnapshotPacket snapPacket)
+        private void MoveClient_OnSnapshot(MoveServer.SnapshotPacket snapPacket)
         {
             if (snapPacket.DataPoints.Count == 0)
                 return;
@@ -256,7 +256,7 @@ namespace MoveClient
 
             //find the first node where locaLTime > node.Time
 
-            Asgard.Core.Collections.LinkedListNode<MoveData> found_node = null;
+            Asgard.Core.Collections.LinkedListNode<MoveServer.MoveData> found_node = null;
             foreach(var node in moveClient.PlayerBuffer)
             {
                 if ((int)node.Value.SnapId == playerData.RemoveSnapId)
