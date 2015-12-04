@@ -9,11 +9,9 @@ using Asgard.EntitySystems.Components;
 using Artemis;
 using Artemis.Utils;
 using Asgard.Core.Network;
-using Asgard.Core.System;
 using Asgard.Core.Physics;
 using Microsoft.Xna.Framework;
 using FarseerPhysics.Collision.Shapes;
-using FarseerPhysics.Common;
 
 namespace MoveServer
 {
@@ -66,12 +64,6 @@ namespace MoveServer
             fix = body.CreateFixture(shape);
             fix.Restitution = 1.0f;
         }
-
-        protected override void BeforeTick(double delta)
-        {
-            base.BeforeTick(delta);
-        }
-
         protected override void BeforePhysics(float delta)
         {
             base.BeforePhysics(delta);
@@ -115,24 +107,6 @@ namespace MoveServer
             }
         }
 
-        protected override void Tick(double delta)
-        {
-            base.Tick(delta);
-
-            var entites = EntityManager.GetEntities(Aspect.One(typeof(Physics2dComponent)));
-            foreach(var entity in entites)
-            {
-                var pComp = entity.GetComponent<Physics2dComponent>();
-                var dObject = entity.GetComponent<DataObject>();
-                if (dObject != null)
-                {
-                    dObject.Position = pComp.Body.Position;
-                    dObject.LinearVelocity = pComp.Body.LinearVelocity;
-                }
-            }
-
-        }
-
         private void OnClientState(ClientStatePacket clientState)
         {
             var conn = clientState.Connection;
@@ -163,9 +137,6 @@ namespace MoveServer
             ball.Setup(midgard, 1);
             _balls.Add(ball);
 
-            var dObject = (DataObject)ObjectMapper.Create((uint)playerEntity.UniqueId, typeof(DataObject));
-
-
             {
 
                 var pe = midgard.EntityManager.Create(2);
@@ -178,8 +149,6 @@ namespace MoveServer
                     };
                 remoteBall.Setup(midgard, 2);
                 _balls.Add(remoteBall);
-
-                dObject = (DataObject)ObjectMapper.Create((uint)pe.UniqueId, typeof(DataObject));
             }
 
             var response = new LoginResponsePacket();

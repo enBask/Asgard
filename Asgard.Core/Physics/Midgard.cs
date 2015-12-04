@@ -1,8 +1,10 @@
 ﻿using Artemis;
+using Asgard.Core.System;
 using Asgard.EntitySystems.Components;
 using FarseerPhysics.Collision;
 using FarseerPhysics.Dynamics;
 using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 
 namespace Asgard.Core.Physics
 {
@@ -26,6 +28,14 @@ namespace Asgard.Core.Physics
 
         }
 
+        public List<Body> BodyList
+        {
+            get
+            {
+                return _world.BodyList;
+            }
+        }
+
         public Body CreateBody(BodyDefinition definition)
         {
             var body = new Body(_world, definition.Position, definition.Angle);
@@ -34,7 +44,7 @@ namespace Asgard.Core.Physics
             return body;
         }
 
-        public Physics2dComponent CreateComponent(Entity entity, BodyDefinition definition)
+        public Physics2dComponent CreateComponent(Entity entity, BodyDefinition definition, bool remoteSync=true)
         {
             var body = CreateBody(definition);
 
@@ -42,6 +52,14 @@ namespace Asgard.Core.Physics
             component.Body = body;
             body.UserData = entity;
             entity.AddComponent(component);
+
+
+            if (remoteSync)
+            {
+                ObjectMapper.Create(
+                    (uint)entity.UniqueId, typeof(NetPhysicsObject));
+            }
+
             return component;
         }
 
@@ -63,7 +81,6 @@ namespace Asgard.Core.Physics
             }
 
             _world.Step(delta);
-
 
             if (OnAfterTick != null)
             {

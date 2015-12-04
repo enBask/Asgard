@@ -81,6 +81,24 @@ namespace Asgard
             
         }
 
+        protected override void AfterPhysics(float delta)
+        {
+            var world = LookupSystem<Midgard>();
+            foreach (var body in world.BodyList)
+            {
+                var entity = body.UserData as Entity;
+                if (entity != null)
+                {
+                    var netSnycObj = entity.GetComponent<NetPhysicsObject>();
+                    if (netSnycObj != null)
+                    {
+                        netSnycObj.Position = body.Position;
+                        netSnycObj.LinearVelocity = body.LinearVelocity;
+                    }
+                }
+            }
+        }
+
         private void SendSnapshot()
         {
             var players = GetPlayerList();
@@ -91,14 +109,28 @@ namespace Asgard
                 var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));
                 foreach(var obj in objList)
                 {
-                    var packet = new DataObjectPacket();
-                    packet.SetOwnerObject(obj);
-                    packet.Id = (uint)nobj.UniqueId;
-
                     foreach (var player in players)
                     {
                         var node = GetPlayerConnection(player);
                         if (node == null) continue;
+
+                        //quick hack to not send net sync data for the player controlled entity
+                        //a different lag comp system is used.
+                        if (obj is NetPhysicsObject)
+                        {
+                            var pComp = nobj.GetComponent<PlayerComponent>();
+                            if (pComp != null)
+                            {
+                                if (pComp.NetworkNode == node)
+                                    continue;
+                            }
+                        }
+
+
+                        var packet = new DataObjectPacket();
+                        packet.SetOwnerObject(obj);
+                        packet.Id = (uint)nobj.UniqueId;
+
                         _bifrost.Send(packet, node);
                     }
                 }

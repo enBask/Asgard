@@ -1,5 +1,6 @@
 ﻿using Artemis;
 using Asgard;
+using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.EntitySystems.Components;
 using Microsoft.Xna.Framework;
@@ -193,7 +194,7 @@ namespace MoveClient
                     foreach(var entity in ents)
                     {
                         var dObject = entity.GetComponent<Physics2dComponent>();
-                        var dataObj = entity.GetComponent<MoveServer.DataObject>();
+                        var dataObj = entity.GetComponent<NetPhysicsObject>();
                         if (dataObj == null || dObject == null || dObject.Body == null) continue;
 
                         _backbuffer.FillEllipse(Brushes.Purple, ((dObject.Body.Position.X + dataObj.position_error_X) * 10f) - 10f,

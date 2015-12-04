@@ -8,8 +8,10 @@ using Asgard.Core.Interpolation;
 using Asgard.Core.Network;
 using Asgard.Core.Network.Data;
 using Asgard.Core.Network.Packets;
+using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.Core.Utils;
+using Asgard.EntitySystems.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,6 +100,50 @@ namespace Asgard.Client
                     ticks++;
                 }
             }
+        }
+
+        protected override void AfterPhysics(float delta)
+        {
+            base.AfterPhysics(delta);
+
+            var ents = EntityManager.GetEntities(Aspect.One(typeof(NetPhysicsObject)));
+            foreach (var ent in ents)
+            {
+                var pComp = ent.GetComponent<Physics2dComponent>();
+                var dObj = ent.GetComponent<NetPhysicsObject>();
+                if (pComp == null || dObj == null || pComp.Body == null)
+                    continue;
+
+                if (dObj.IsUpdated)
+                {
+                    float perrX = (pComp.Body.Position.X + dObj.position_error_X) - dObj.Position.Value.X;
+                    float perrY = (pComp.Body.Position.Y + dObj.position_error_Y) - dObj.Position.Value.Y;
+                    dObj.position_error_X = perrX;
+                    dObj.position_error_Y = perrY;
+
+                    pComp.Body.Position = dObj.Position;
+                    pComp.Body.LinearVelocity = dObj.LinearVelocity;
+                    dObj.IsUpdated = false;
+                }
+
+
+                if (Math.Abs(dObj.position_error_X) >= 0.00001f)
+                    if (Math.Abs(dObj.position_error_X) >= 1f)
+                        dObj.position_error_X *= 0.975f;
+                    else
+                        dObj.position_error_X *= 0.975f;
+                else
+                    dObj.position_error_X = 0;
+
+                if (Math.Abs(dObj.position_error_Y) >= 0.00001f)
+                    if (Math.Abs(dObj.position_error_Y) >= 1f)
+                        dObj.position_error_Y *= 0.975f;
+                    else
+                        dObj.position_error_Y *= 0.975f;
+                else
+                    dObj.position_error_Y = 0;
+            }
+           
         }
 
         private void MergeJitterBuffer()

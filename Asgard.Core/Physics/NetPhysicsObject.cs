@@ -18,13 +18,6 @@ namespace Asgard.Core.Physics
 
         public float position_error_X { get; set; }
         public float position_error_Y { get; set; }
-
-        public float RenderX { get; set; }
-        public float RenderY { get; set; }
-
-        public float PrevX { get; set; }
-        public float PrevY { get; set; }
-
     }
 
 
