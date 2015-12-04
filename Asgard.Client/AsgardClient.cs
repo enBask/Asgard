@@ -107,7 +107,7 @@ namespace Asgard.Client
             {
                 foreach(var netObj in netObjects)
                 {
-                    if (netObj.Item2 is DefinitionNetworkObject) continue;
+                    //if (netObj.Item2 is DefinitionNetworkObject) continue;
 
                     var entity = netObj.Item1;
                     var objB = netObj.Item2;
@@ -127,7 +127,7 @@ namespace Asgard.Client
                     else
                     {
                         var ditem = DataLookupTable.Get(objType.GetTypeInfo());
-                        ditem.Merge(objA, objB);
+                        ditem.Merge((NetworkObject)objA, (NetworkObject)objB);
                     }
                 }
             }     

@@ -27,6 +27,8 @@ namespace Asgard.Core.Network.Data
         {
             _owned = true;
         }
+
+        public bool IsUpdated { get; set; }
     }
 
     public class StateSyncNetworkObject : NetworkObject

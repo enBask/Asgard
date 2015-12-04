@@ -174,12 +174,14 @@ namespace Asgard.Core.Network.Data
 
         public Type ResolvedType { get; private set; }
 
-        public void Merge(object objA, object objB)
+        public void Merge(NetworkObject objA, NetworkObject objB)
         {
             foreach(var prop in Properties)
             {
                 prop.Set(objA, prop.Get(objB));
             }
+
+            objA.IsUpdated = true;
         }
         
     }

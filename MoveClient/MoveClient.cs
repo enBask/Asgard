@@ -159,25 +159,7 @@ namespace ChatClient
             if (pCompo == null) return;
             pCompo.Body.LinearVelocity = vel;
 
-            var ents = EntityManager.GetEntities(Aspect.One(typeof(DataObject)));
-            foreach(var ent in ents)
-            {
-                if (ent == player) continue;
-
-                pCompo = ent.GetComponent<Physics2dComponent>();
-                var dObj = ent.GetComponent<DataObject>();
-                if (pCompo == null || dObj == null || pCompo.Body == null)
-                    continue;
-
-
-                float perrX = (pCompo.Body.Position.X + dObj.position_error_X) - dObj.Position.Value.X;
-                float perrY = (pCompo.Body.Position.Y + dObj.position_error_Y) - dObj.Position.Value.Y;
-                dObj.position_error_X = perrX;
-                dObj.position_error_Y = perrY;
-
-                pCompo.Body.Position = dObj.Position;
-                pCompo.Body.LinearVelocity = dObj.LinearVelocity;
-            }
+           
 
         }
 
@@ -201,6 +183,32 @@ namespace ChatClient
 
 
             var ents = EntityManager.GetEntities(Aspect.One(typeof(DataObject)));
+            foreach (var ent in ents)
+            {
+                if (ent == player) continue;
+
+                pCompo = ent.GetComponent<Physics2dComponent>();
+                var dObj = ent.GetComponent<DataObject>();
+                if (pCompo == null || dObj == null || pCompo.Body == null)
+                    continue;
+
+
+
+                if (dObj.IsUpdated)
+                {
+                    float perrX = (pCompo.Body.Position.X + dObj.position_error_X) - dObj.Position.Value.X;
+                    float perrY = (pCompo.Body.Position.Y + dObj.position_error_Y) - dObj.Position.Value.Y;
+                    dObj.position_error_X = perrX;
+                    dObj.position_error_Y = perrY;
+
+                    pCompo.Body.Position = dObj.Position;
+                    pCompo.Body.LinearVelocity = dObj.LinearVelocity;
+                    dObj.IsUpdated = false;
+                }
+            }
+
+
+//            var ents = EntityManager.GetEntities(Aspect.One(typeof(DataObject)));
             foreach (var ent in ents)
             {
                 if (ent == player) continue;

@@ -86,6 +86,7 @@ namespace Asgard.Core.System
             if (_inSnapshot && comp != null)
             {
                 comp = Activator.CreateInstance(type) as NetworkObject;
+                comp.IsUpdated = true;
                 _snapshotCache.Add( new Tuple<Entity, NetworkObject>(entity, comp));
             }
 
