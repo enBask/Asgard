@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Asgard.Core.System;
+using FarseerPhysics.Collision.Shapes;
 
 namespace MoveServer
 {
@@ -35,7 +36,12 @@ namespace MoveServer
                 _entity = manager.Create();
             }
 
-            world.CreateComponent(_entity, BodyDef);
+            var phyComp = world.CreateComponent(_entity, BodyDef);
+            var body = phyComp.Body;
+
+            CircleShape shape = new CircleShape(1,1);
+            var fix = body.CreateFixture(shape);
+            fix.Restitution = 1;
         }
 
         public override void OnCreated(AsgardBase instance, Entity entity)

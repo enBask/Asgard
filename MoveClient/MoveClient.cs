@@ -6,6 +6,8 @@ using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.EntitySystems.Components;
 using ChatServer;
+using FarseerPhysics.Collision.Shapes;
+using FarseerPhysics.Common;
 using Microsoft.Xna.Framework;
 using MoveClient;
 using MoveServer;
@@ -47,6 +49,31 @@ namespace ChatClient
             _bifrost.OnDisconnect += ChatClient_OnDisconnect;
             _bifrost.OnConnection += ChatClient_OnConnection;
             PacketFactory.AddCallback<LoginResponsePacket>(OnLoginResult);
+
+            var midgard = LookupSystem<Midgard>();
+            var def = new BodyDefinition();
+            var body = midgard.CreateBody(def);
+            body.BodyType = FarseerPhysics.Dynamics.BodyType.Static;
+            Vertices verts = new Vertices(4);
+            verts.Add(new Vector2(0, 0));
+            verts.Add(new Vector2(0, -60));
+            verts.Add(new Vector2(80, -60));
+            verts.Add(new Vector2(80, 0));
+
+
+            EdgeShape shape = new EdgeShape(new Vector2(0, 0), new Vector2(80, 0));
+            var fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+            shape = new EdgeShape(new Vector2(80, 0), new Vector2(80, 60));
+            fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+            shape = new EdgeShape(new Vector2(80, 60), new Vector2(0, 60));
+            fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+            shape = new EdgeShape(new Vector2(0, 60), new Vector2(0, 0));
+            fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+
         }
 
         public void PumpNetwork(bool pump)

@@ -3,6 +3,7 @@ using Artemis.Manager;
 using Asgard.Core.Network.Data;
 using Asgard.Core.Physics;
 using Asgard.Core.System;
+using FarseerPhysics.Collision.Shapes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,6 @@ namespace MoveServer
     public class Ball : DefinitionNetworkObject
     {
         NetworkProperty<BodyDefinition> BodyDef { get; set; }
-        Entity _entity;
         public bool _isControlled = false;
 
         public Ball()
@@ -25,7 +25,12 @@ namespace MoveServer
         {
             var world = instance.LookupSystem<Midgard>();
             var manager = world.EntityManager;
-            world.CreateComponent(entity, BodyDef);
+            var body =world.CreateComponent(entity, BodyDef).Body;
+
+            CircleShape shape = new CircleShape(1, 1);
+            var fix = body.CreateFixture(shape);
+            fix.Restitution = 1;
+
         }
     }
 }

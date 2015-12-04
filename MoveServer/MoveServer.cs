@@ -12,6 +12,8 @@ using Asgard.Core.Network;
 using Asgard.Core.System;
 using Asgard.Core.Physics;
 using Microsoft.Xna.Framework;
+using FarseerPhysics.Collision.Shapes;
+using FarseerPhysics.Common;
 
 namespace MoveServer
 {
@@ -44,6 +46,25 @@ namespace MoveServer
 
             PacketFactory.AddCallback<MoveLoginPacket>(OnLogin);
             PacketFactory.AddCallback<ClientStatePacket>(OnClientState);
+
+            var midgard = LookupSystem<Midgard>();
+
+            var def = new BodyDefinition();
+            var body = midgard.CreateBody(def);
+            body.BodyType = FarseerPhysics.Dynamics.BodyType.Static;
+
+            EdgeShape shape = new EdgeShape(new Vector2(0, 0), new Vector2(80, 0));
+            var fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+            shape = new EdgeShape(new Vector2(80, 0), new Vector2(80, 60));
+            fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+            shape = new EdgeShape(new Vector2(80, 60), new Vector2(0, 60));
+            fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
+            shape = new EdgeShape(new Vector2(0, 60), new Vector2(0, 0));
+            fix = body.CreateFixture(shape);
+            fix.Restitution = 1.0f;
         }
 
         protected override void BeforeTick(double delta)
