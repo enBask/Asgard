@@ -1,5 +1,6 @@
 ﻿using Asgard.Core.System;
 using Lidgren.Network;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,9 @@ namespace Asgard.Core.Network.Data
         LONG,
         FLOAT,
         DOUBLE,
-        STRING
+        STRING,
+        VECTOR2,
+        NETPROP
     }
 
     internal class DataSerializationProperty
@@ -30,6 +33,7 @@ namespace Asgard.Core.Network.Data
         private PropertyInfo _property;
         private PropertyInfo PropGetter;
         private Type _resolvedType;
+        private DataSerializationItem _childProperty;
 
         public DataTypes Type { get; set; }
 
@@ -40,6 +44,8 @@ namespace Asgard.Core.Network.Data
                 bits++;
             return bits;
         }
+
+        internal DataSerializationItem ChildProperty { get{ return _childProperty; } }
 
         public DataSerializationProperty(PropertyInfo prop, Type propType)
         {
@@ -100,6 +106,18 @@ namespace Asgard.Core.Network.Data
             {
                 Type = DataTypes.STRING;
             }
+            else if (propType == typeof(Vector2))
+            {
+                Type = DataTypes.VECTOR2;
+            }
+
+            if (propType.IsSubclassOf(typeof(NetworkObject)))
+            {
+                Type = DataTypes.NETPROP;
+                var typeInfo = propType.GetTypeInfo();
+                _childProperty = DataLookupTable.BuildDataItem(typeInfo);
+            }
+
             #endregion
         }
 
@@ -131,6 +149,15 @@ namespace Asgard.Core.Network.Data
             PropGetter.SetValue(propObject, value);
         }
 
+        public object CreateChildProperty()
+        {
+            if (_childProperty == null)
+                return null;
+
+            return Activator.CreateInstance(_childProperty.ResolvedType);
+
+        }
+
 
     }
 
@@ -139,10 +166,13 @@ namespace Asgard.Core.Network.Data
         public bool IsUnreliable { get; set; }
         public List<DataSerializationProperty> Properties { get; set; }
 
-        public DataSerializationItem()
+        public DataSerializationItem(Type resolvedType)
         {
+            ResolvedType = resolvedType;
             Properties = new List<DataSerializationProperty>();
         }
+
+        public Type ResolvedType { get; private set; }
 
         public void Merge(object objA, object objB)
         {
@@ -171,15 +201,20 @@ namespace Asgard.Core.Network.Data
 
         internal static void AddType(TypeInfo type)
         {
-            ObjectMapper.AddRawType(type);
+            if (type.IsSubclassOf(typeof(NetworkObject)))
+            {
+                AddTypeObject(type);
+            }
+        }
 
-            bool isUnreliable = type.IsSubclassOf(typeof(UnreliableNetworkObject));
+        internal static DataSerializationItem BuildDataItem(TypeInfo type)
+        {
+            if (!type.IsSubclassOf(typeof(NetworkObject)))
+                return null;
 
-            DataSerializationItem dataItem = new DataSerializationItem();
-            dataItem.IsUnreliable = isUnreliable;
-
+            var dataClass = new DataSerializationItem(type);
             var props = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach(var prop in props)
+            foreach (var prop in props)
             {
                 var propType = prop.PropertyType;
                 if (propType.IsGenericType)
@@ -193,12 +228,21 @@ namespace Asgard.Core.Network.Data
 
                         var typeArg = types[0];
                         DataSerializationProperty dataProp = new DataSerializationProperty(prop, typeArg);
-                        dataItem.Properties.Add(dataProp);
-
+                        dataClass.Properties.Add(dataProp);
                     }
                 }
             }
 
+            return dataClass;
+        }      
+        internal static void AddTypeObject(TypeInfo type)
+        {
+            ObjectMapper.AddRawType(type);
+
+            bool isUnreliable = type.IsSubclassOf(typeof(UnreliableStateSyncNetworkObject));
+
+            DataSerializationItem dataItem = BuildDataItem(type);
+            dataItem.IsUnreliable = isUnreliable;
             _LookupTable[type] = dataItem;
         }
 

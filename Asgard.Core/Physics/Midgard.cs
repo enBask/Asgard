@@ -1,118 +1,73 @@
 ﻿using Artemis;
 using Asgard.EntitySystems.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+using FarseerPhysics.Collision;
+using FarseerPhysics.Dynamics;
+using Microsoft.Xna.Framework;
 
 namespace Asgard.Core.Physics
 {
     public class Midgard : BaseSystem
     {
-        AABB _boundingBox;
-        List<Body> _bodies;
+        public delegate void TickCallback(float delta);
+        public event TickCallback OnBeforeTick;
+        public event TickCallback OnAfterTick;
 
+        World _world;
         int _tickRate;
         float _invTickRate;
         double _accum;
-        public Midgard(AABB boundBox, int tickRate)
+
+        public Midgard(AABB boundBox, Vector2 gravity, int tickRate)
         {
             _tickRate = tickRate;
             _invTickRate = 1f / (float)_tickRate;
 
-            _boundingBox = boundBox;
-            _bodies = new List<Body>();
+            _world = new World(gravity, boundBox);
+
         }
 
         public Body CreateBody(BodyDefinition definition)
         {
-            var body = new Body(definition);
-            _bodies.Add(body);
+            var body = new Body(_world, definition.Position, definition.Angle);
+            body.BodyType = BodyType.Dynamic;
+            body.LinearVelocity = definition.LinearVelocity;
             return body;
+        }
+
+        public Physics2dComponent CreateComponent(Entity entity, BodyDefinition definition)
+        {
+            var body = CreateBody(definition);
+
+            var component = new Physics2dComponent();
+            component.Body = body;
+            body.UserData = entity;
+            entity.AddComponent(component);
+            return component;
+        }
+
+        public Body LookupBody(Entity entity)
+        {
+            var comp = entity.GetComponent<Physics2dComponent>();
+            if (comp == null)
+            {
+                return null;
+            }
+            return comp.Body;
         }
 
         public void Step(float delta)
         {
-            IntegrateInputs();
-
-            IntegrateVelocities(delta);
-
-            IntegrateCollisions();
-
-        }
-
-        private void IntegrateInputs()
-        {
-            var players = EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
-            foreach(var player in players)
+            if (OnBeforeTick != null)
             {
-                var pComponent = player.GetComponent<PlayerComponent>();
-                if (pComponent.Body == null) continue;
-
-                var stateData = pComponent.GetNextState();
-                if (stateData == null) continue;
-
-                float speed = 25f;
-                Vector2 vel = new Vector2();
-                if (stateData.Forward)
-                {
-                    vel.Y = -speed;
-                }
-                if (stateData.Back)
-                {
-                    vel.Y = speed;
-                }
-
-                if (stateData.Right)
-                {
-                    vel.X = speed;
-                }
-                if (stateData.Left)
-                {
-                    vel.X = -speed;
-                }
-
-                pComponent.Body.LinearVelocity = vel;
-
+                OnBeforeTick(delta);
             }
-        }
 
-        private void IntegrateCollisions()
-        {
-            for (int i = 0; i < _bodies.Count; ++i)
+            _world.Step(delta);
+
+
+            if (OnAfterTick != null)
             {
-                Body body = _bodies[i];
-
-                if (!_boundingBox.PointIn(body._position))
-                {
-                    var min = _boundingBox.Min();
-                    var max = _boundingBox.Max();
-
-                    if (body._position.X > max.X)
-                        body._position.X = max.X;
-                    else if (body._position.X < min.X)
-                        body._position.X = min.X;
-
-                    if (body._position.Y > max.Y)
-                        body._position.Y = max.Y;
-                    else if (body._position.Y < min.Y)
-                        body._position.Y = min.Y;
-
-                    body._linearVelocity = Vector2.Zero;
-                    body._sleeping = true;
-                }
-            }
-        }
-
-        private void IntegrateVelocities(float delta)
-        {
-            for(int i =0; i < _bodies.Count; ++i)
-            {
-                Body body = _bodies[i];
-
-                body._position += body._linearVelocity * delta;            
+                OnAfterTick(delta);
             }
         }
 

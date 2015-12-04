@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Numerics;
+﻿using Asgard.Core.Network.Data;
+using Microsoft.Xna.Framework;
 
 namespace Asgard.Core.Physics
 {
-    public struct BodyDefinition
+    public class BodyDefinition : DefinitionNetworkObject
     {
-        public Vector2 Position;
-        public Vector2 LinearVelocity;
+        public NetworkProperty<Vector2> Position { get; set; }
+        public NetworkProperty<float> Angle { get; set; }
+        public NetworkProperty<Vector2> LinearVelocity { get; set; }
     }
 }

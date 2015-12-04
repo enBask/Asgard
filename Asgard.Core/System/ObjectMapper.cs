@@ -14,6 +14,7 @@ namespace Asgard.Core.System
     public static class ObjectMapper
     {
         static EntityManager _manager;
+        static AsgardBase _instance;
 
         static Dictionary<ushort, Type> _typeLookup = new Dictionary<ushort, Type>();
         static Dictionary<Type, ushort> _typeLookupReverse = new Dictionary<Type, ushort>();
@@ -25,13 +26,14 @@ namespace Asgard.Core.System
         static List<Tuple<Entity, NetworkObject>> _snapshotCache = new List<Tuple<Entity, NetworkObject>>();
         static bool _inSnapshot = false;
 
-        internal static void Init(EntityManager manager)
+        internal static void Init(AsgardBase instance)
         {
-            _manager = manager;
+            _instance = instance;
+            _manager = instance.EntityManager;
 
             var orderedList = _rawLookupTypes.OrderBy(t =>
             {
-                return t.AssemblyQualifiedName.GetHashCode();
+                return t.ToString().GetHashCode();
             });
 
             ushort index = 0;
@@ -60,6 +62,15 @@ namespace Asgard.Core.System
             ushort id;
             _typeLookupReverse.TryGetValue(type, out id);
             return id;
+        }
+
+        public static void DefineObject(object obj, uint entityId)
+        {
+            if (obj is DefinitionNetworkObject)
+            {
+                var entity = _manager.GetEntityByUniqueId(entityId);
+                (obj as DefinitionNetworkObject).OnCreated(_instance, entity);
+            }
         }
 
         public static NetworkObject Lookup(uint id, ushort typeId)
@@ -117,11 +128,12 @@ namespace Asgard.Core.System
             return comp;
         }
 
-        internal static List<NetworkObject> GetNetObjects(Entity entity)
+        internal static List<NetworkObject> GetNetObjects(Entity entity, Type type)
         {
             List<NetworkObject> objList;
             _netObjectCache.TryGetValue(entity, out objList);
-            return objList;
+
+            return objList.Where(o => o.GetType().IsSubclassOf(type)).ToList();
         }
 
         internal static IEnumerable<Entity> GetEntityCache()

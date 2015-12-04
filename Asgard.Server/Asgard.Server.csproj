@@ -56,7 +56,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsgardServer.cs" />
-    <Compile Include="EntitySystems\Components\Physics2dComponent.cs" />
     <Compile Include="EntitySystems\PlayerSystem.cs" />
     <Compile Include="Network\Connection.cs" />
     <Compile Include="Network\NetConfig.cs" />

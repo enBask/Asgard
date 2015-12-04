@@ -1,4 +1,6 @@
-﻿using Artemis.Interface;
+﻿using Artemis;
+using Artemis.Interface;
+using Asgard.Core.System;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,23 +29,47 @@ namespace Asgard.Core.Network.Data
         }
     }
 
-    public class UnreliableNetworkObject : NetworkObject
+    public class StateSyncNetworkObject : NetworkObject
     {
-        public UnreliableNetworkObject() : base()
+        public StateSyncNetworkObject() : base()
         {
         }
 
-        public UnreliableNetworkObject(int channel) : base(channel)
+        public StateSyncNetworkObject(int channel) : base(channel)
         {
 
         }
     }
 
-    public class StateSyncNetObject : NetworkObject
+    public class UnreliableStateSyncNetworkObject : StateSyncNetworkObject
     {
+        public UnreliableStateSyncNetworkObject() : base()
+        {
+        }
 
+        public UnreliableStateSyncNetworkObject(int channel) : base(channel)
+        {
+
+        }
     }
 
+    public class DefinitionNetworkObject: NetworkObject
+    {
+        public DefinitionNetworkObject() : base()
+        {
+        }
+
+        public DefinitionNetworkObject(int channel) : base(channel)
+        {
+
+        }
+
+        public virtual void OnCreated(AsgardBase instance, Entity entity)
+        {
+
+        }
+    }
+    
     public class NetworkProperty<T>
     {
         private T _value;

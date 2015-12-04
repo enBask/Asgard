@@ -1,5 +1,6 @@
 ﻿using Asgard.Core.Network.Data;
 using Asgard.Core.System;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,39 +53,8 @@ namespace Asgard.Core.Network.Packets
                 return;
             }
 
-
-            foreach (var prop in _dItem.Properties)
-            {
-                switch (prop.Type)
-                {
-                    case DataTypes.BOOL:
-                        prop.Set(_owner, msg.ReadBool());
-                        break;
-                    case DataTypes.UBYTE:
-                    case DataTypes.UINT:
-                        prop.Set(_owner, msg.ReadVariableUInt32() );
-                        break;
-                    case DataTypes.BYTE:
-                    case DataTypes.INT:
-                        prop.Set(_owner, msg.ReadVariableInt32());
-                        break;
-                    case DataTypes.ULONG:
-                        prop.Set(_owner, msg.ReadUInt64());
-                        break;
-                    case DataTypes.LONG:
-                        prop.Set(_owner, msg.ReadInt64());
-                        break;
-                    case DataTypes.FLOAT:
-                        prop.Set(_owner, msg.ReadFloat());
-                        break;
-                    case DataTypes.DOUBLE:
-                        prop.Set(_owner, msg.ReadDouble());
-                        break;
-                    case DataTypes.STRING:
-                        prop.Set(_owner, msg.ReadString());
-                        break;
-                }
-            }
+            ReadNetObject(_dItem, msg, _owner);
+            ObjectMapper.DefineObject(_owner, Id);
 
         }
 
@@ -98,35 +68,103 @@ namespace Asgard.Core.Network.Packets
             ushort objTypeId = ObjectMapper.LookupType(_ownerType);
             msg.WriteVariableUInt32(objTypeId);
             msg.WriteVariableUInt32(Id);
-            foreach(var prop in _dItem.Properties)
+            WriteNetObject(_dItem, msg, _owner);
+        }
+
+        private void ReadNetObject(DataSerializationItem item, Bitstream msg, object owner)
+        {
+            foreach (var prop in item.Properties)
             {
-                switch(prop.Type)
+                switch (prop.Type)
                 {
                     case DataTypes.BOOL:
-                        msg.Write((bool)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadBool());
                         break;
                     case DataTypes.UBYTE:
                     case DataTypes.UINT:
-                        msg.WriteVariableUInt32((uint)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadVariableUInt32());
                         break;
                     case DataTypes.BYTE:
                     case DataTypes.INT:
-                        msg.WriteVariableInt32((int)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadVariableInt32());
                         break;
                     case DataTypes.ULONG:
-                        msg.Write((ulong)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadUInt64());
                         break;
                     case DataTypes.LONG:
-                        msg.Write((long)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadInt64());
                         break;
                     case DataTypes.FLOAT:
-                        msg.Write((float)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadFloat());
                         break;
                     case DataTypes.DOUBLE:
-                        msg.Write((double)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadDouble());
                         break;
                     case DataTypes.STRING:
-                        msg.Write((string)prop.Get(_owner));
+                        prop.Set(owner, msg.ReadString());
+                        break;
+                    case DataTypes.VECTOR2:
+                        prop.Set(owner, msg.ReadVector2());
+                        break;
+                    case DataTypes.NETPROP:
+                        var childProp = prop.ChildProperty;
+                        if (childProp != null)
+                        {
+                            var o = prop.CreateChildProperty();
+                            if (o != null)
+                            {
+                                ReadNetObject(childProp, msg, o);
+                                ObjectMapper.DefineObject(o, Id);
+                                prop.Set(owner, o);
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+
+        private void WriteNetObject(DataSerializationItem item, Bitstream msg, object owner)
+        {
+            foreach (var prop in item.Properties)
+            {
+                switch (prop.Type)
+                {
+                    case DataTypes.BOOL:
+                        msg.Write((bool)prop.Get(owner));
+                        break;
+                    case DataTypes.UBYTE:
+                    case DataTypes.UINT:
+                        msg.WriteVariableUInt32((uint)prop.Get(owner));
+                        break;
+                    case DataTypes.BYTE:
+                    case DataTypes.INT:
+                        msg.WriteVariableInt32((int)prop.Get(owner));
+                        break;
+                    case DataTypes.ULONG:
+                        msg.Write((ulong)prop.Get(owner));
+                        break;
+                    case DataTypes.LONG:
+                        msg.Write((long)prop.Get(owner));
+                        break;
+                    case DataTypes.FLOAT:
+                        msg.Write((float)prop.Get(owner));
+                        break;
+                    case DataTypes.DOUBLE:
+                        msg.Write((double)prop.Get(owner));
+                        break;
+                    case DataTypes.STRING:
+                        msg.Write((string)prop.Get(owner));
+                        break;
+                    case DataTypes.VECTOR2:
+                        msg.Write((Vector2)prop.Get(owner));
+                        break;
+                    case DataTypes.NETPROP:
+                        var childProp = prop.ChildProperty;
+                        if (childProp != null)
+                        {
+                            var o = prop.Get(owner);
+                            WriteNetObject(childProp, msg, o);
+                        }
                         break;
                 }
             }

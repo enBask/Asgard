@@ -19,18 +19,13 @@ using System.Threading.Tasks;
 
 namespace Asgard.Client
 {
-    public class AsgardClient<TSnapshotPacket, TData, TClientData> :  AsgardBase
-        where TData : class
-        where TClientData: Packet
-        where TSnapshotPacket: Packet, IInterpolationPacket<TData>
+    public class AsgardClient<TClientState>:  AsgardBase
+        where TClientState : Packet
     {
 
         protected bool _pumpNetwork = true;
 
         public delegate void AsgardClientCallback();
-        public delegate void SnapshotCallback(TSnapshotPacket snapshot);
-
-        public event SnapshotCallback OnSnapshot;
 
         JitterBuffer<Tuple<Entity,NetworkObject>> _jitterBuffer;
         double _netAccum = 0;
@@ -112,6 +107,8 @@ namespace Asgard.Client
             {
                 foreach(var netObj in netObjects)
                 {
+                    if (netObj.Item2 is DefinitionNetworkObject) continue;
+
                     var entity = netObj.Item1;
                     var objB = netObj.Item2;
                     if (objB == null)
@@ -145,7 +142,7 @@ namespace Asgard.Client
             _bifrost.Send(clientPacket, 1);
         }
 
-        protected virtual TClientData GetClientState()
+        protected virtual TClientState GetClientState()
         {
             return null;
         }

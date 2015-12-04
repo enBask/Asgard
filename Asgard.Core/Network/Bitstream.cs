@@ -1,4 +1,5 @@
 ﻿using Lidgren.Network;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -173,6 +174,33 @@ namespace Asgard.Core.Network
         public void Write(long data)
         {
             _buffer.Write(data);
+        }
+
+        public Vector2 ReadVector2()
+        {
+            var hasData = _buffer.ReadBoolean();
+            if (hasData)
+            {
+                Vector2 v;
+                v.X = _buffer.ReadFloat();
+                v.Y = _buffer.ReadFloat();
+                return v;
+            }
+            else
+            {
+                return Vector2.Zero;
+            }
+        }
+
+        public void Write(Vector2 data)
+        {
+            var hasData = (data != Vector2.Zero);
+            _buffer.Write(hasData);
+            if (hasData)
+            {
+                _buffer.Write(data.X);
+                _buffer.Write(data.Y);
+            }
         }
     }
 }

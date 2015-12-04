@@ -1,13 +1,14 @@
 ﻿using Artemis;
 using Asgard;
 using Asgard.Core.System;
+using Asgard.EntitySystems.Components;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
-using System.Numerics;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -17,8 +18,6 @@ namespace MoveClient
     {
         private ChatClient.MoveClient moveClient;
 
-        int tickRate = 60;
-        float _downTime = 0f;
         PlayerStateData _localState = new PlayerStateData();
         public MainForm()
         {
@@ -26,12 +25,8 @@ namespace MoveClient
            
             moveClient = new ChatClient.MoveClient();
             moveClient.OnTick += MoveClient_OnTick;
-            moveClient.OnSnapshot += MoveClient_OnSnapshot;
             moveClient.PlayerState = new PlayerStateData();
             moveClient.PlayerState.Position = new Vector2(40f,30f);
-
-            var moveSys = moveClient.LookupSystem<MoverSystem>();
-            moveSys.StateData = moveClient.PlayerState;
 
             var th = new Thread(() =>
             {
@@ -178,8 +173,6 @@ namespace MoveClient
                 bChanged = true;
             }
         }
-
-        Dictionary<int, MoveServer.MoveData> _objects = new Dictionary<int, MoveServer.MoveData>();
         private void Render()
         {           
             {
@@ -196,39 +189,28 @@ namespace MoveClient
                     _backbuffer.DrawImage(_bitmap2, 0, 0);
                     _backbuffer.DrawImage(_textbitmap, 640, 5);
 
-                    foreach (var obj in moveClient._objects)
-                    {                       
-                        _backbuffer.FillEllipse(Brushes.Red, ((obj.X + obj.position_error_X) * 10f) - 10f, ((obj.Y + obj.position_error_Y) * 10f) - 10f, 20f, 20f);
-                    }
-
-//                     var xDiff = Math.Abs(moveClient.PlayerState.RenderX - moveClient.PlayerState.X);
-//                     var yDiff = Math.Abs(moveClient.PlayerState.RenderY - moveClient.PlayerState.Y);
-
-//                     if ( (xDiff >= 2.0f || yDiff >= 2.0f) 
-//                         )
-//                     {
-//                         moveClient.PlayerState.RenderX = moveClient.PlayerState.X;
-//                         moveClient.PlayerState.RenderY = moveClient.PlayerState.Y;
-//                     }
-//                     else
-//                     {
-//                         moveClient.PlayerState.RenderX = MathHelpers.LinearInterpolate(moveClient.PlayerState.RenderX,
-//                             moveClient.PlayerState.X, 0.2f);
-//                         moveClient.PlayerState.RenderY = MathHelpers.LinearInterpolate(moveClient.PlayerState.RenderY,
-//                             moveClient.PlayerState.Y, 0.2f);
-//                     }
-
-                    _backbuffer.FillEllipse(Brushes.Green, (moveClient.PlayerState.Position.X * 10f) - 10f,
-                        (moveClient.PlayerState.Position.Y * 10f) - 10f, 20f, 20f);
-
-
-                    var moveSys = moveClient.LookupSystem<MoverSystem>();
-                    var ents = moveSys.EntityManager.GetEntities(Aspect.One(typeof(MoveServer.DataObject)));
+                    var ents = moveClient.EntityManager.GetEntities(Aspect.One(typeof(Physics2dComponent)));
                     foreach(var entity in ents)
                     {
-                        var dObject = entity.GetComponent<MoveServer.DataObject>();
-                        _backbuffer.FillEllipse(Brushes.Purple, ((dObject.RenderX+dObject.position_error_X) * 10f) - 10f,
-                            ((dObject.RenderY + dObject.position_error_Y) * 10f) - 10f, 20f, 20f);
+                        var dObject = entity.GetComponent<Physics2dComponent>();
+                        var dataObj = entity.GetComponent<MoveServer.DataObject>();
+                        if (dataObj == null || dObject == null || dObject.Body == null) continue;
+
+                        _backbuffer.FillEllipse(Brushes.Purple, ((dObject.Body.Position.X + dataObj.position_error_X) * 10f) - 10f,
+                            ((dObject.Body.Position.Y + dataObj.position_error_Y) * 10f) - 10f, 20f, 20f);
+                    }
+
+                    var player = moveClient.EntityManager.GetEntityByUniqueId(1);
+                    if (player != null)
+                    {
+                        var pComp = player.GetComponent<Physics2dComponent>();
+                        if (pComp != null && pComp.Body != null)
+                        {
+                            var body = pComp.Body;
+                            _backbuffer.FillEllipse(Brushes.Green, (body.Position.X * 10f) - 10f,
+                                (body.Position.Y * 10f) - 10f, 20f, 20f);
+
+                        }
                     }
 
                     g.DrawImage(_bitmap, 0, 0);
@@ -245,45 +227,40 @@ namespace MoveClient
             moveClient.PlayerState.Right = _localState.Right;
         }
 
-        private void MoveClient_OnSnapshot(MoveServer.SnapshotPacket snapPacket)
-        {
-            if (snapPacket.DataPoints.Count == 0)
-                return;
-            var playerData = snapPacket.DataPoints[0];
-
-//             moveClient.PlayerState.X = playerData.X;
-//             moveClient.PlayerState.Y = playerData.Y;
-
-            //find the first node where locaLTime > node.Time
-
-            Asgard.Core.Collections.LinkedListNode<MoveServer.MoveData> found_node = null;
-            foreach(var node in moveClient.PlayerBuffer)
-            {
-                if ((int)node.Value.SnapId == playerData.RemoveSnapId)
-                {
-                    //var prev_node = node.Previous;
-                    //go back one node, if we have it.
-                    //if (prev_node != null)
-                    {
-                        found_node = node;
-                        break;
-                    }
-                }
-            }
-
-            if (found_node != null)
-            {                
-                moveClient.PlayerBuffer.TruncateTo(found_node);
-            }
-
-//             lock (_backbuffer2)
+//         private void MoveClient_OnSnapshot(MoveServer.SnapshotPacket snapPacket)
+//         {
+//             if (snapPacket.DataPoints.Count == 0)
+//                 return;
+//             var playerData = snapPacket.DataPoints[0];
+// 
+//             Asgard.Core.Collections.LinkedListNode<MoveServer.MoveData> found_node = null;
+//             foreach(var node in moveClient.PlayerBuffer)
 //             {
-//                 _backbuffer2.Clear(Color.White);
-//                 foreach (var obj in snapPacket.DataPoints)
+//                 if ((int)node.Value.SnapId == playerData.RemoveSnapId)
 //                 {
-//                     //_backbuffer2.FillEllipse(Brushes.Blue, (float)(obj.X * 10f)-10f, (float)(obj.Y * 10f)-10f, 20f, 20f);
+//                     //var prev_node = node.Previous;
+//                     //go back one node, if we have it.
+//                     //if (prev_node != null)
+//                     {
+//                         found_node = node;
+//                         break;
+//                     }
 //                 }
 //             }
-        }
+// 
+//             if (found_node != null)
+//             {                
+//                 moveClient.PlayerBuffer.TruncateTo(found_node);
+//             }
+// 
+// //             lock (_backbuffer2)
+// //             {
+// //                 _backbuffer2.Clear(Color.White);
+// //                 foreach (var obj in snapPacket.DataPoints)
+// //                 {
+// //                     //_backbuffer2.FillEllipse(Brushes.Blue, (float)(obj.X * 10f)-10f, (float)(obj.Y * 10f)-10f, 20f, 20f);
+// //                 }
+// //             }
+//         }
     }
 }

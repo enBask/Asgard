@@ -11,7 +11,7 @@ using System.Drawing.Imaging;
 namespace MoveServer
 {
     [ArtemisEntitySystem(ExecutionType = Artemis.Manager.ExecutionType.Synchronous, GameLoopType = Artemis.Manager.GameLoopType.Update, Layer = 10)]
-    public class RenderSystem : EntityComponentProcessingSystem<PlayerComponent>
+    public class RenderSystem : EntityComponentProcessingSystem<Physics2dComponent>
     {
         Graphics _targetGraphics;
         Graphics _textLayer;
@@ -72,18 +72,11 @@ namespace MoveServer
             _backBuffer.Clear(Color.White);
         }
 
-        public override void Process(Entity entity, PlayerComponent component1)
+        public override void Process(Entity entity, Physics2dComponent component)
         {
-            if (component1 != null)
-            {
-                var body = component1.Body;
-//                 if (Math.Abs(body.LinearVelocity.X) <= 00.1 && Math.Abs(body.LinearVelocity.Y) <= 00.1)
-//                 {
-//                     body.ApplyLinearImpulse(new Vector2(9000000000000000f, 9000000000000000f / 2f));
-//                 }
-
-                _backBuffer.FillEllipse(Brushes.Red, (float)(component1.Body.Position.X * 10f) - 10f, (float)(component1.Body.Position.Y * 10f) - 10f, 20f, 20f);
-            }
+                 var body = component.Body;
+ 
+                 _backBuffer.FillEllipse(Brushes.Red, (float)(body.Position.X * 10f) - 10f, (float)(body.Position.Y * 10f) - 10f, 20f, 20f);
 
         }
     }

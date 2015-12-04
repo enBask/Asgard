@@ -1,12 +1,14 @@
 ﻿using Artemis;
+using Artemis.Manager;
 using Artemis.System;
 using Asgard.Core.Network.Packets;
 using Asgard.Core.Physics;
+using FarseerPhysics.Collision;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,10 +32,22 @@ namespace Asgard.Core.System
         public AsgardBase()
         {
             _entityWorld = new EntityWorld(false, true, true);
-            ObjectMapper.Init(_entityWorld.EntityManager);
+            ObjectMapper.Init(this);
 
-            _midgard = new Midgard(new AABB(new Vector2(0f,0f), new Vector2(80f,60f)), 60);
+            AABB bounds = new AABB(new Vector2(40f, 30f), 85f, 65f);
+            _midgard = new Midgard(bounds, new Vector2(0,0), 60);
             AddInternalSystem(_midgard, 0);
+
+            _midgard.OnBeforeTick += BeforePhysics;
+            _midgard.OnAfterTick += AfterPhysics;
+        }
+
+        public EntityManager EntityManager
+        {
+            get
+            {
+                return _entityWorld.EntityManager;
+            }
         }
 
         #region system system
@@ -105,6 +119,15 @@ namespace Asgard.Core.System
         protected virtual void BeforeTick(double delta)
         {
 
+        }
+
+        protected virtual void BeforePhysics(float delta)
+        {
+
+        }
+
+        protected virtual void AfterPhysics(float delta)
+        {
         }
 
         public virtual void Run()

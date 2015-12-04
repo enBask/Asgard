@@ -14,6 +14,7 @@ using Asgard.Core.Network.Packets;
 using Asgard.Core.Interpolation;
 using Asgard.Core.Network.Data;
 using Asgard.Core.Physics;
+using Asgard.EntitySystems.Components;
 
 namespace Asgard
 {
@@ -87,7 +88,7 @@ namespace Asgard
 
             foreach(Entity nobj in ObjectMapper.GetEntityCache())
             {
-                var objList = ObjectMapper.GetNetObjects(nobj);
+                var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));
                 foreach(var obj in objList)
                 {
                     var packet = new DataObjectPacket();
@@ -101,6 +102,28 @@ namespace Asgard
                         _bifrost.Send(packet, node);
                     }
                 }
+
+                var defObjList = ObjectMapper.GetNetObjects(nobj, typeof(DefinitionNetworkObject));
+                foreach (var obj in defObjList)
+                {
+                    foreach (var player in players)
+                    {
+                        var node = GetPlayerConnection(player);
+                        if (node == null) continue;
+
+                        var entity = EntityManager.GetEntity(player);
+                        var playerComp = entity.GetComponent<PlayerComponent>();
+                        if (!playerComp.IsObjectKnown(obj))
+                        {
+                            playerComp.AddKnownObject(obj);
+                            var packet = new DataObjectPacket();
+                            packet.SetOwnerObject(obj);
+                            packet.Id = (uint)nobj.UniqueId;
+
+                            _bifrost.Send(packet, node, 3);
+                        }
+                    }
+                }       
             }                    
         }
     }

@@ -10,8 +10,8 @@ using Artemis;
 using Artemis.Utils;
 using Asgard.Core.Network;
 using Asgard.Core.System;
-using System.Numerics;
 using Asgard.Core.Physics;
+using Microsoft.Xna.Framework;
 
 namespace MoveServer
 {
@@ -34,7 +34,8 @@ namespace MoveServer
     {
         BifrostServer _bifrost;
         PlayerSystem _playerSys;
-        int _worldId;
+
+        List<Ball> _balls = new List<Ball>();
 
         public MoveServer()
         {
@@ -50,21 +51,62 @@ namespace MoveServer
             base.BeforeTick(delta);
         }
 
+        protected override void BeforePhysics(float delta)
+        {
+            base.BeforePhysics(delta);
+
+            var players = EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
+            foreach (var player in players)
+            {
+                var pComponent = player.GetComponent<PlayerComponent>();
+                var phyComp = player.GetComponent<Physics2dComponent>();
+                if (phyComp == null || phyComp.Body == null)
+                {
+                    continue;
+                }
+
+                var stateData = pComponent.GetNextState();
+                if (stateData == null) continue;
+
+                float speed = 25f;
+                Vector2 vel = new Vector2();
+                if (stateData.Forward)
+                {
+                    vel.Y = -speed;
+                }
+                if (stateData.Back)
+                {
+                    vel.Y = speed;
+                }
+
+                if (stateData.Right)
+                {
+                    vel.X = speed;
+                }
+                if (stateData.Left)
+                {
+                    vel.X = -speed;
+                }
+
+                phyComp.Body.LinearVelocity = vel;
+
+
+            }
+        }
+
         protected override void Tick(double delta)
         {
             base.Tick(delta);
 
-            var players = _playerSys.EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
-            foreach(var player in players)
+            var entites = EntityManager.GetEntities(Aspect.One(typeof(Physics2dComponent)));
+            foreach(var entity in entites)
             {
-                var pComp = player.GetComponent<PlayerComponent>();
-                var dObject = player.GetComponent<DataObject>();
+                var pComp = entity.GetComponent<Physics2dComponent>();
+                var dObject = entity.GetComponent<DataObject>();
                 if (dObject != null)
                 {
-                    dObject.X = pComp.Body.Position.X;
-                    dObject.Y = pComp.Body.Position.Y;
-                    dObject.VelX = pComp.Body.LinearVelocity.X;
-                    dObject.VelY = pComp.Body.LinearVelocity.Y;
+                    dObject.Position = pComp.Body.Position;
+                    dObject.LinearVelocity = pComp.Body.LinearVelocity;
                 }
             }
 
@@ -89,36 +131,38 @@ namespace MoveServer
 
         private void OnLogin(MoveLoginPacket packet)
         {
+            var midgard = LookupSystem<Midgard>();
+
             var conn = packet.Connection;
             var playerData = new PlayerComponent(networkNode: conn);
             var playerEntity = _playerSys.Add(playerData, 1);
 
-            BodyDefinition bodyDefinition = 
-                new BodyDefinition() { Position = new Vector2(40f, 30f) };
+            var ball = (Ball)ObjectMapper.Create((uint)playerEntity.UniqueId, typeof(Ball));
+            ball.BodyDef = new BodyDefinition() { Position = new Vector2(40f, 30f) };
+            ball.Setup(midgard, 1);
+            _balls.Add(ball);
 
-            var midgard = LookupSystem<Midgard>();
-            var body = midgard.CreateBody(bodyDefinition);
-            playerData.Body = body;
-            body.UserData = playerEntity;
             var dObject = (DataObject)ObjectMapper.Create((uint)playerEntity.UniqueId, typeof(DataObject));
 
-            {
-                var pd = new PlayerComponent(null);
-                var pe = midgard.EntityManager.Create(2);
-                pe.AddComponent(pd);
-                bodyDefinition =
-                new BodyDefinition()
-                {
-                    Position = new Vector2(0f, 0f),
-                    LinearVelocity = new Vector2(2f, 2f)             
-                };
 
-                body = midgard.CreateBody(bodyDefinition);
-                pd.Body = body;
-                body.UserData = pe;
+            {
+
+                var pe = midgard.EntityManager.Create(2);
+                var remoteBall = (Ball)ObjectMapper.Create((uint)pe.UniqueId, typeof(Ball));
+                remoteBall.BodyDef = 
+                    new BodyDefinition()
+                    {
+                        Position = new Vector2(0f, 0f),
+                        LinearVelocity = new Vector2(2f, 2f)
+                    };
+                remoteBall.Setup(midgard, 2);
+                _balls.Add(remoteBall);
+
                 dObject = (DataObject)ObjectMapper.Create((uint)pe.UniqueId, typeof(DataObject));
             }
 
+            var response = new LoginResponsePacket();
+            _bifrost.Send(response, packet.Connection);
         }
 
         private void _bifrost_OnDisconnect(Asgard.Core.Network.NetNode connection)
