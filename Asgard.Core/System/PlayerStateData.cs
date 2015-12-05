@@ -14,5 +14,6 @@ namespace Asgard.Core.System
         public bool Left { get; set; }
         public bool Right { get; set; }
         public Vector2 Position { get; set; }
+        public uint SimTick { get; set; }
     }
 }

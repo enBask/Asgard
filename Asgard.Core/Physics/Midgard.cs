@@ -1,4 +1,5 @@
 ﻿using Artemis;
+using Asgard.Core.Network;
 using Asgard.Core.System;
 using Asgard.EntitySystems.Components;
 using FarseerPhysics.Collision;
@@ -81,6 +82,7 @@ namespace Asgard.Core.Physics
             }
 
             _world.Step(delta);
+            NetTime.SimTick++;
 
             if (OnAfterTick != null)
             {

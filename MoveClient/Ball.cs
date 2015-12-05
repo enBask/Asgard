@@ -25,11 +25,12 @@ namespace MoveServer
         {
             var world = instance.LookupSystem<Midgard>();
             var manager = world.EntityManager;
-            var body =world.CreateComponent(entity, BodyDef).Body;
+            var body = world.CreateComponent(entity, BodyDef).Body;
 
             CircleShape shape = new CircleShape(1, 1);
             var fix = body.CreateFixture(shape);
             fix.Restitution = 1;
+            fix.Friction = 1;
 
         }
     }

@@ -64,6 +64,7 @@ namespace MoveServer
             fix = body.CreateFixture(shape);
             fix.Restitution = 1.0f;
         }
+
         protected override void BeforePhysics(float delta)
         {
             base.BeforePhysics(delta);
@@ -121,7 +122,6 @@ namespace MoveServer
                 l.Add(inp);
                 playerComp.InputBuffer.Add(l);
             }           
-
         }
 
         private void OnLogin(MoveLoginPacket packet)
@@ -163,7 +163,6 @@ namespace MoveServer
                 _playerSys.Remove(playerEntity);
             }
         }
-
 
         public bool Start()
         {

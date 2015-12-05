@@ -92,8 +92,16 @@ namespace Asgard
                     var netSnycObj = entity.GetComponent<NetPhysicsObject>();
                     if (netSnycObj != null)
                     {
+
+                        uint simTick = NetTime.SimTick;
+                        var playerObj = entity.GetComponent<PlayerComponent>();
+                        if (playerObj != null && playerObj.CurrentState != null)
+                        {
+                            simTick = playerObj.CurrentState.SimTick;
+                        }
                         netSnycObj.Position = body.Position;
                         netSnycObj.LinearVelocity = body.LinearVelocity;
+                        netSnycObj.SimTick = simTick;
                     }
                 }
             }
@@ -118,11 +126,14 @@ namespace Asgard
                         //a different lag comp system is used.
                         if (obj is NetPhysicsObject)
                         {
+                            (obj as NetPhysicsObject).PlayerControlled = false;
                             var pComp = nobj.GetComponent<PlayerComponent>();
                             if (pComp != null)
                             {
                                 if (pComp.NetworkNode == node)
-                                    continue;
+                                {
+                                    (obj as NetPhysicsObject).PlayerControlled = true;
+                                }
                             }
                         }
 

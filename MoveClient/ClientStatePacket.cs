@@ -26,9 +26,8 @@ namespace MoveServer
                 msg.Write(o.Back);
                 msg.Write(o.Left);
                 msg.Write(o.Right);
-                msg.Write(o.Position.X);
-                msg.Write(o.Position.Y);
-                msg.Write(0);
+                msg.Write(o.Position);
+                msg.Write(o.SimTick);
             }
             msg.Write(SnapId);
         }

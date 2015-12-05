@@ -41,6 +41,10 @@ namespace ChatClient
         public PlayerStateData PlayerState { get; set; }
         public List<PlayerStateData> StateList { get; set; }
 
+        Asgard.Core.Collections.LinkedList<PlayerStateData> _movebuffer = 
+            new Asgard.Core.Collections.LinkedList<PlayerStateData>();
+
+
         public MoveClient() : base()
         {
             _bifrost = LookupSystem<BifrostClient>();
@@ -127,6 +131,33 @@ namespace ChatClient
             base.Tick(delta);
             if (OnTick != null)
                 OnTick(delta);
+
+            var player = EntityManager.GetEntityByUniqueId(1);
+            if (player == null) return;
+            var playerComp = player.GetComponent<PlayerComponent>();
+            var phyComp = player.GetComponent<Physics2dComponent>();
+            if (phyComp == null || phyComp.Body == null) return;
+
+            if (playerComp.LerpToReal)
+            {
+                float t = (float)((NetTime.RealTime - playerComp.LerpStart) 
+                    / (playerComp.LerpEnd - playerComp.LerpStart));
+                t = Math.Min(t, 1.0f);
+                t = Math.Max(t, 0.0f);
+
+                playerComp.RenderPosition = Vector2.Lerp(playerComp.OldPosition, phyComp.Body.Position, t);
+                if ((playerComp.OldPosition - phyComp.Body.Position).LengthSquared() <= 0.0001f)
+                {
+                    playerComp.LerpToReal = false;
+                }
+            }
+            else
+            {
+                playerComp.OldPosition = phyComp.Body.Position;
+                playerComp.RenderPosition = phyComp.Body.Position;
+            }
+
+
         }
 
         protected override void BeforePhysics(float delta)
@@ -159,10 +190,69 @@ namespace ChatClient
             if (pCompo == null) return;
             pCompo.Body.LinearVelocity = vel;
 
+
+            ApplyLagComp();
            
 
         }
 
+        private void ApplyLagComp()
+        {
+            var player = EntityManager.GetEntityByUniqueId(1);
+            var netSync = player.GetComponent<NetPhysicsObject>();
+            if (netSync == null) return;
+
+            Asgard.Core.Collections.LinkedListNode<PlayerStateData> found_node = null;
+            foreach(var node in _movebuffer)
+            {
+                if (node.Value.SimTick == netSync.SimTick)
+                {
+                    found_node = node;
+                    break;
+                }
+            }
+
+            if (found_node != null)
+            {
+                var moveData = found_node.Value;
+
+                var diff = netSync.Position -moveData.Position;
+
+                if (diff.LengthSquared() > 0)
+                {
+                    var node = found_node;
+                    Vector2 pos = netSync.Position;
+
+                    Vector2 prev_pos = node.Value.Position;
+                    while (node != null)
+                    {
+                        var move = node.Value;
+                        Vector2 velStep = move.Position - prev_pos;
+
+
+                        pos += velStep;
+                        prev_pos = move.Position;
+                        node = node.Next;
+                        move.Position = pos;
+                    }
+
+                    var pComp = player.GetComponent<Physics2dComponent>();
+                    if (pComp == null || pComp.Body == null) return;
+
+                    var playerComponent = player.GetComponent<PlayerComponent>();
+                    playerComponent.LerpToReal = true;
+                    playerComponent.OldPosition = pComp.Body.Position;
+                    playerComponent.LerpStart = NetTime.RealTime;
+                    playerComponent.LerpEnd = playerComponent.LerpStart + (0.1f);
+                    pComp.Body.Position = pos;
+                }
+
+
+                _movebuffer.TruncateTo(found_node.Next);
+            }
+
+
+        }
         protected override void AfterPhysics(float delta)
         {
             base.AfterPhysics(delta);
@@ -172,17 +262,18 @@ namespace ChatClient
             var pCompo = player.GetComponent<Physics2dComponent>();
             if (pCompo == null) return;
 
-            StateList.Add(new PlayerStateData()
+            var move = new PlayerStateData()
             {
                 Position = pCompo.Body.Position,
                 Left = PlayerState.Left,
                 Right = PlayerState.Right,
                 Forward = PlayerState.Forward,
-                Back = PlayerState.Back
-            });
+                Back = PlayerState.Back,
+                SimTick = NetTime.SimTick
+            };
 
-
-            
+            StateList.Add(move);
+            _movebuffer.AddToTail(move);
         }
     }
 }

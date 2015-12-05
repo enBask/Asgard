@@ -54,8 +54,6 @@ namespace Asgard.Core.Network.Packets
             }
 
             ReadNetObject(_dItem, msg, _owner);
-            ObjectMapper.DefineObject(_owner, Id);
-
         }
 
         public override void Serialize(Bitstream msg)
@@ -114,7 +112,6 @@ namespace Asgard.Core.Network.Packets
                             if (o != null)
                             {
                                 ReadNetObject(childProp, msg, o);
-                                ObjectMapper.DefineObject(o, Id);
                                 prop.Set(owner, o);
                             }
                         }

@@ -1,4 +1,5 @@
-﻿using Asgard.Core.System;
+﻿using Artemis;
+using Asgard.Core.System;
 using Lidgren.Network;
 using Microsoft.Xna.Framework;
 using System;
@@ -158,6 +159,21 @@ namespace Asgard.Core.Network.Data
 
         }
 
+        internal void DefineObject(object owner, Entity entity)
+        {
+            var defObj = Get(owner);
+
+            var objType = defObj.GetType();
+            var ditem = DataLookupTable.Get(objType.GetTypeInfo());
+            foreach (var prop in ditem.Properties)
+            {
+                if (prop.ChildProperty != null)
+                {
+                    prop.DefineObject(defObj, entity);
+                }
+            }
+            ObjectMapper.DefineObject(defObj, (uint)entity.UniqueId);
+        }
 
     }
 
@@ -183,7 +199,6 @@ namespace Asgard.Core.Network.Data
 
             objA.IsUpdated = true;
         }
-        
     }
 
     internal static class DataLookupTable

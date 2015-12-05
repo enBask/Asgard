@@ -99,7 +99,8 @@ namespace Asgard.Core.Collections
         public void TruncateTo(LinkedListNode<T> node)
         {
             _head = node;
-            node.Previous = null;
+            if (node != null)
+                node.Previous = null;
         }
 
         private LinkedListNode<T> findTail()

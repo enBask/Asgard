@@ -4,6 +4,7 @@ using Asgard.Core.Network;
 using Asgard.Core.Network.Data;
 using Asgard.Core.System;
 using FarseerPhysics.Dynamics;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -15,6 +16,12 @@ namespace Asgard.EntitySystems.Components
 
         public JitterBuffer<PlayerStateData> InputBuffer { get; set; }
         public PlayerStateData CurrentState { get; set; }
+        public Vector2 OldPosition { get; set; }
+        public Vector2 RenderPosition { get; set; }
+        public bool LerpToReal { get; set; }
+        public float LerpStart { get; set; }
+        public float LerpEnd { get; set; }
+
 
         private List<WeakReference<NetworkObject>> _knownObjects { get; set; }
 

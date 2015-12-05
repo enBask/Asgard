@@ -25,10 +25,9 @@ namespace MoveServer
                 o.Left = msg.ReadBool();
                 o.Right = msg.ReadBool();
 
-                Vector2 pos = new Vector2(msg.ReadFloat(), msg.ReadFloat());
-                o.Position = pos;
+                o.Position = msg.ReadVector2();
+                o.SimTick = (uint)msg.ReadInt32();
 
-                var id= msg.ReadInt32();
                 State.Add(o);
             }
             SnapId = msg.ReadInt32();

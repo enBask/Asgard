@@ -3,6 +3,7 @@ using Asgard;
 using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.EntitySystems.Components;
+using ChatClient;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -205,11 +206,12 @@ namespace MoveClient
                     if (player != null)
                     {
                         var pComp = player.GetComponent<Physics2dComponent>();
-                        if (pComp != null && pComp.Body != null)
+                        var playerComp = player.GetComponent<PlayerComponent>();
+                        if (playerComp != null && pComp != null && pComp.Body != null)
                         {
                             var body = pComp.Body;
-                            _backbuffer.FillEllipse(Brushes.Green, (body.Position.X * 10f) - 10f,
-                                (body.Position.Y * 10f) - 10f, 20f, 20f);
+                            _backbuffer.FillEllipse(Brushes.Green, (playerComp.RenderPosition.X * 10f) - 10f,
+                                (playerComp.RenderPosition.Y * 10f) - 10f, 20f, 20f);
 
                         }
                     }

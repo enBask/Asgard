@@ -86,22 +86,14 @@ namespace Asgard.Client
                     _bifrost.Flush();
                 }
             }
-
-            _physics_accum += delta;
-            if (_physics_accum >= _physics_InvtickRate)
-            {
-                var ticks = 0;
-                double time = NetTime.SimTime;
-                while (_physics_accum >= _physics_InvtickRate)
-                {
-                    _physics_accum -= _physics_InvtickRate;
-
-                    MergeJitterBuffer();
-                    ticks++;
-                }
-            }
         }
 
+        protected override void BeforePhysics(float delta)
+        {
+            base.BeforePhysics(delta);
+            MergeJitterBuffer();
+
+        }
         protected override void AfterPhysics(float delta)
         {
             base.AfterPhysics(delta);
@@ -116,13 +108,17 @@ namespace Asgard.Client
 
                 if (dObj.IsUpdated)
                 {
-                    float perrX = (pComp.Body.Position.X + dObj.position_error_X) - dObj.Position.Value.X;
-                    float perrY = (pComp.Body.Position.Y + dObj.position_error_Y) - dObj.Position.Value.Y;
-                    dObj.position_error_X = perrX;
-                    dObj.position_error_Y = perrY;
+                    if (!dObj.PlayerControlled)
+                    {
+                        float perrX = (pComp.Body.Position.X + dObj.position_error_X) - dObj.Position.Value.X;
+                        float perrY = (pComp.Body.Position.Y + dObj.position_error_Y) - dObj.Position.Value.Y;
+                        dObj.position_error_X = perrX;
+                        dObj.position_error_Y = perrY;
 
-                    pComp.Body.Position = dObj.Position;
-                    pComp.Body.LinearVelocity = dObj.LinearVelocity;
+                        pComp.Body.Position = dObj.Position;
+                        pComp.Body.LinearVelocity = dObj.LinearVelocity;
+                    }
+
                     dObj.IsUpdated = false;
                 }
 
@@ -153,10 +149,10 @@ namespace Asgard.Client
             {
                 foreach(var netObj in netObjects)
                 {
-                    //if (netObj.Item2 is DefinitionNetworkObject) continue;
-
                     var entity = netObj.Item1;
                     var objB = netObj.Item2;
+
+
                     if (objB == null)
                     {
                         //TODO : LOG => should never happen
@@ -165,6 +161,20 @@ namespace Asgard.Client
 
                     var objType = objB.GetType();
                     var compType = ComponentTypeManager.GetTypeFor(objType);
+
+                    if (netObj.Item2 is DefinitionNetworkObject)
+                    {
+                        var ditem = DataLookupTable.Get(objType.GetTypeInfo());
+                        foreach(var prop in ditem.Properties)
+                        {
+                            if (prop.ChildProperty != null)
+                            {
+                                prop.DefineObject(objB, entity);
+                            }
+                        }
+                        ObjectMapper.DefineObject(objB, (uint)entity.UniqueId);
+                    }
+
                     var objA =  entity.GetComponent(compType); 
                     if (objA == null)
                     {
