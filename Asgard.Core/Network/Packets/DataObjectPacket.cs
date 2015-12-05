@@ -1,6 +1,6 @@
 ﻿using Asgard.Core.Network.Data;
 using Asgard.Core.System;
-using Microsoft.Xna.Framework;
+using Farseer.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +13,7 @@ namespace Asgard.Core.Network.Packets
     [PacketAttribute((ushort)PacketTypes.DATA_OBJECT, NetDeliveryMethod.ReliableOrdered)]
     public class DataObjectPacket : Packet
     {        
-        public uint Id { get; set; }
+        public long Id { get; set; }
 
         DataSerializationItem _dItem;
         object _owner;
@@ -38,7 +38,7 @@ namespace Asgard.Core.Network.Packets
         public override void Deserialize(Bitstream msg)
         {
             ushort objTypeId = (ushort)msg.ReadVariableUInt32();
-            Id = msg.ReadVariableUInt32();
+            Id = msg.ReadInt64();
 
 
             object obj = ObjectMapper.Lookup(Id, objTypeId);
@@ -65,7 +65,7 @@ namespace Asgard.Core.Network.Packets
 
             ushort objTypeId = ObjectMapper.LookupType(_ownerType);
             msg.WriteVariableUInt32(objTypeId);
-            msg.WriteVariableUInt32(Id);
+            msg.Write(Id);
             WriteNetObject(_dItem, msg, _owner);
         }
 

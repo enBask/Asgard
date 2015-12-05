@@ -8,7 +8,7 @@ using Asgard.EntitySystems.Components;
 using ChatServer;
 using FarseerPhysics.Collision.Shapes;
 using FarseerPhysics.Common;
-using Microsoft.Xna.Framework;
+using Farseer.Framework;
 using MoveClient;
 using MoveServer;
 using System;

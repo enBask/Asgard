@@ -4,8 +4,9 @@ using Asgard.Core.System;
 using Asgard.EntitySystems.Components;
 using FarseerPhysics.Collision;
 using FarseerPhysics.Dynamics;
-using Microsoft.Xna.Framework;
+using Farseer.Framework;
 using System.Collections.Generic;
+using FarseerPhysics.Factories;
 
 namespace Asgard.Core.Physics
 {
@@ -25,7 +26,7 @@ namespace Asgard.Core.Physics
             _tickRate = tickRate;
             _invTickRate = 1f / (float)_tickRate;
 
-            _world = new World(gravity, boundBox);
+            _world = new World(gravity);
 
         }
 
@@ -43,6 +44,11 @@ namespace Asgard.Core.Physics
             body.BodyType = BodyType.Dynamic;
             body.LinearVelocity = definition.LinearVelocity;
             return body;
+        }
+
+        public World GetWorld()
+        {
+            return _world;
         }
 
         public Physics2dComponent CreateComponent(Entity entity, BodyDefinition definition, bool remoteSync=true)

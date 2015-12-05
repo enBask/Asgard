@@ -172,7 +172,7 @@ namespace Asgard.Client
                                 prop.DefineObject(objB, entity);
                             }
                         }
-                        ObjectMapper.DefineObject(objB, (uint)entity.UniqueId);
+                        ObjectMapper.DefineObject(objB, entity.UniqueId);
                     }
 
                     var objA =  entity.GetComponent(compType); 

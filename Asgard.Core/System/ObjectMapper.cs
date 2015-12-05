@@ -64,7 +64,7 @@ namespace Asgard.Core.System
             return id;
         }
 
-        public static void DefineObject(object obj, uint entityId)
+        public static void DefineObject(object obj, long entityId)
         {
             if (obj is DefinitionNetworkObject)
             {
@@ -73,7 +73,7 @@ namespace Asgard.Core.System
             }
         }
 
-        public static NetworkObject Lookup(uint id, ushort typeId)
+        public static NetworkObject Lookup(long id, ushort typeId)
         {
             var entity = _manager.GetEntityByUniqueId(id);
             if (entity == null) return null;
@@ -93,13 +93,13 @@ namespace Asgard.Core.System
             return comp;
         }
 
-        public static NetworkObject Create(uint id, ushort typeId)
+        public static NetworkObject Create(long id, ushort typeId)
         {
             var compType = LookupType(typeId);
             return Create(id, compType);            
         }
 
-        public static NetworkObject Create(uint id, Type type)
+        public static NetworkObject Create(long id, Type type)
         {
             var entity = CreateEntity(id);
             var comp = Activator.CreateInstance(type) as NetworkObject;
@@ -154,12 +154,15 @@ namespace Asgard.Core.System
             }
         }
 
-        public static Entity CreateEntity(uint id)
+        public static Entity CreateEntity(long id = 0)
         {
-            var ent = _manager.GetEntityByUniqueId(id);
+            Entity ent = null;
+            if (id != 0)
+                ent = _manager.GetEntityByUniqueId(id);
+
             if (ent == null)
             {
-                ent = _manager.Create(id);
+                ent = _manager.Create();
                 _netObjectCache[ent] = new List<NetworkObject>();
             }
 

@@ -45,11 +45,11 @@ namespace Asgard.EntitySystems
         public AsgardBase Base { get; set; }
 
 
-        public Entity Add(PlayerComponent comp, uint id, Entity owner = null)
+        public Entity Add(PlayerComponent comp, Entity owner = null)
         {
             if (owner == null)
             {
-                owner = ObjectMapper.CreateEntity(id);
+                owner = ObjectMapper.CreateEntity();
             }
             owner.AddComponent(comp);
             return owner;

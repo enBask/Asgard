@@ -4,7 +4,7 @@ using Artemis.System;
 using Asgard.Core.Network.Packets;
 using Asgard.Core.Physics;
 using FarseerPhysics.Collision;
-using Microsoft.Xna.Framework;
+using Farseer.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

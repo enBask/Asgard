@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="16" tileheight="16" nextobjectid="1">
+ <tileset firstgid="1" name="Roguelike" tilewidth="16" tileheight="16" spacing="1" tilecount="1767">
+  <image source="../Spritesheet/roguelikeSheet_transparent.png" width="968" height="526"/>
+ </tileset>
+ <layer name="Floor" width="100" height="100">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3WSQrCQBAF0CY5q+JwAb2a063UrQbMQrBKbULr4j3oTaA29Un/LgUAAOD3jl0p++Scuu/nohneO993t+rjcwl2fk3mzvKoNuxu1sdnGex8nczIo96wu22JzzzY+aKPZ+RR710em+TIY3ry+C9RX4/vpCyP6I11lUe1qK/Hd1KWR/Q2G7qeOlFfzz7MI+p6pvdJHrQjj/+Sdb3ebi/rer3dXtb1eru93eNeemX4fnBfNTX+H6/4PwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4NkNsMQXsUCcAAA=
+  </data>
+ </layer>
+ <layer name="Carpet" width="100" height="100">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3WsQ2DQAwFUCtHG7IXazEGZKsQYBsoTxREJxFdwXvS71xYdmFHAAAAAABwR0OKGLO8U+2O7u2zz3/K8rWPqp5NRJvl1dTuCOrpHv+tp0xfON/SeoCrHO/BvP+3S5Y1nddzreM9+LUP9wMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACI2Pc0EWUCcAAA=
+  </data>
+ </layer>
+ <layer name="Objects" width="100" height="100">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3VTUrDQBgG4Em9RBEsdOUV9Cb2CC57hS4teAPRVa9hoaDgCey6F+mURhpwJpNgpIs+D7x88xuGQDIhAAAAwG93VQgvsX6FYw2NWrKrjnUW8zD4yS7TvH6nV9Vp7HZ0ar9l6o+bmEkd/m5RmN9m6jKx9nmQE9HFapQe38Q8Vuk5+it9H11cx4wHeA7dvDfC/3ot9A8+Yj5j7uv/0lNmfWov/XwX+gfrRtr2p/YCcHly97N7+zya9/M0Mw4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABt9seBO61AnAAA
+  </data>
+ </layer>
+ <layer name="Details" width="100" height="100">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3OIQEAIAwAwQExyEgJklNgYm6IO/P2IwAAACC3R16g5szuAyru6j4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfvMACryPh0CcAAA=
+  </data>
+ </layer>
+ <layer name="CLayer" width="100" height="100">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3XOw6AIBAFQCrvfwrPaeyg2mVVpJhJaEggZB+f0BoAAACMzuPvFdC784haZRw1Uf1m6y6PZ2ZqF52VypyM3trP/TzyqMveR1Gf9+N7mTxYRx57ieotj7XksZfqXxEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAnAvCvftOQJwAAA==
+  </data>
+ </layer>
+</map>

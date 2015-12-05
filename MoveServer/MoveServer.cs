@@ -10,7 +10,7 @@ using Artemis;
 using Artemis.Utils;
 using Asgard.Core.Network;
 using Asgard.Core.Physics;
-using Microsoft.Xna.Framework;
+using Farseer.Framework;
 using FarseerPhysics.Collision.Shapes;
 
 namespace MoveServer

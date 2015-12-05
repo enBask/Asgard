@@ -1,0 +1,11 @@
+﻿{
+  "network": {
+    "port": 8899,
+    "maxconnections": 50,
+    "tickrate": 20
+  },
+  "physics": {
+    "type": "2d",
+    "tickrate": 30
+  }
+}

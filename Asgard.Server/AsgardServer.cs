@@ -44,14 +44,9 @@ namespace Asgard
             AddInternalSystem<BifrostServer>(_bifrost, 0);
         }
 
-        protected virtual IEnumerable<int> GetPlayerList()
+        protected virtual IEnumerable<Entity> GetPlayerList()
         {
-            return null;
-        }
-       
-        protected virtual NetNode GetPlayerConnection(int entityId)
-        {
-            return null;
+            return EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
         }
 
         protected override void BeforeTick(double delta)
@@ -119,7 +114,8 @@ namespace Asgard
                 {
                     foreach (var player in players)
                     {
-                        var node = GetPlayerConnection(player);
+                        var playerComp = player.GetComponent<PlayerComponent>();
+                        var node = playerComp.NetworkNode;
                         if (node == null) continue;
 
                         //quick hack to not send net sync data for the player controlled entity
@@ -140,7 +136,7 @@ namespace Asgard
 
                         var packet = new DataObjectPacket();
                         packet.SetOwnerObject(obj);
-                        packet.Id = (uint)nobj.UniqueId;
+                        packet.Id = nobj.UniqueId;
 
                         _bifrost.Send(packet, node);
                     }
@@ -151,17 +147,16 @@ namespace Asgard
                 {
                     foreach (var player in players)
                     {
-                        var node = GetPlayerConnection(player);
+                        var playerComp = player.GetComponent<PlayerComponent>();
+                        var node = playerComp.NetworkNode;
                         if (node == null) continue;
 
-                        var entity = EntityManager.GetEntity(player);
-                        var playerComp = entity.GetComponent<PlayerComponent>();
                         if (!playerComp.IsObjectKnown(obj))
                         {
                             playerComp.AddKnownObject(obj);
                             var packet = new DataObjectPacket();
                             packet.SetOwnerObject(obj);
-                            packet.Id = (uint)nobj.UniqueId;
+                            packet.Id = nobj.UniqueId;
 
                             _bifrost.Send(packet, node, 3);
                         }
