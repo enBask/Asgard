@@ -26,6 +26,8 @@ namespace Asgard.Core.Physics
             _tickRate = tickRate;
             _invTickRate = 1f / (float)_tickRate;
 
+            FarseerPhysics.Settings.ContinuousPhysics = false;
+
             _world = new World(gravity);
 
         }
@@ -51,7 +53,7 @@ namespace Asgard.Core.Physics
             return _world;
         }
 
-        public Physics2dComponent CreateComponent(Entity entity, BodyDefinition definition, bool remoteSync=true)
+        public Physics2dComponent CreateComponent(Entity entity, BodyDefinition definition, bool remoteSync = true)
         {
             var body = CreateBody(definition);
 
@@ -64,7 +66,7 @@ namespace Asgard.Core.Physics
             if (remoteSync)
             {
                 ObjectMapper.Create(
-                    (uint)entity.UniqueId, typeof(NetPhysicsObject));
+                    entity.UniqueId, typeof(NetPhysicsObject));
             }
 
             return component;
@@ -101,10 +103,12 @@ namespace Asgard.Core.Physics
             _accum += delta;
             if (_accum >= _invTickRate)
             {
-                while (_accum >= _invTickRate)
+                int ticks = 0;
+                while (_accum >= _invTickRate && ticks < 3)
                 {
                     _accum -= _invTickRate;
                     Step(_invTickRate);
+                    ticks++;
                 }
             }
         }

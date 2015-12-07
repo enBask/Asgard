@@ -8,6 +8,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
+using FastMember;
+using Artemis.Interface;
 
 namespace Asgard.Core.Network.Data
 {
@@ -31,9 +34,8 @@ namespace Asgard.Core.Network.Data
 
     internal class DataSerializationProperty
     {
-        private PropertyInfo _property;
-        private PropertyInfo PropGetter;
-        private Type _resolvedType;
+        private string propName;
+        private Type resolvedType;
         private DataSerializationItem _childProperty;
 
         public DataTypes Type { get; set; }
@@ -50,13 +52,8 @@ namespace Asgard.Core.Network.Data
 
         public DataSerializationProperty(PropertyInfo prop, Type propType)
         {
-            _property = prop;
-            var type = typeof(NetworkProperty<>);
-            _resolvedType = type.MakeGenericType(propType);
-            PropGetter = _resolvedType.GetProperty("Value");
-
-            //NumberOfBits = BitsToHoldValue(Attribute._range);
-
+            propName = prop.Name;
+            resolvedType = propType;
             #region type conv
             if (propType == typeof(bool))
             {
@@ -122,32 +119,120 @@ namespace Asgard.Core.Network.Data
             #endregion
         }
 
-        public object Get(object owner)
+        public T Get<T>(NetworkObject owner)
         {
-            if (_property == null) return null;
-            if (owner == null) return null;
+            if (owner == null) return default(T);
 
-            var propObject = _property.GetValue(owner);
-            if (propObject == null)
+            var wrapped = ObjectAccessor.Create(owner);
+            var prop = wrapped[propName];
+
+            if (_childProperty != null)
             {
-                propObject = Activator.CreateInstance(_resolvedType);
-                _property.SetValue(owner, propObject);
+                var t = typeof(NetworkProperty<>);
+                t = t.MakeGenericType(_childProperty.ResolvedType);
+                if (prop == null)
+                {
+                    prop = Activator.CreateInstance(t);
+                    wrapped[propName] = prop;
+                }
+
+                var subWrap = ObjectAccessor.Create(prop);
+                return (T)subWrap["Value"];
             }
-            return PropGetter.GetValue(propObject);
+            else
+            {
+                if (prop == null)
+                {
+                    wrapped[propName] = prop = new NetworkProperty<T>();
+                }
+                return (prop as NetworkProperty<T>).Value;
+            }
+
+           
         }
 
-        public void Set(object owner, object value)
+        public object GetUnknown(NetworkObject owner)
         {
-            if (_property == null) return;
-            if (owner == null) return;
+            if (owner == null) return null;
 
-            var propObject = _property.GetValue(owner);
-            if (propObject == null)
+            var wrapped = ObjectAccessor.Create(owner);
+            var prop = wrapped[propName];
+
+            var t = typeof(NetworkProperty<>);
+            t = t.MakeGenericType(resolvedType);
+            if (prop == null)
             {
-                propObject = Activator.CreateInstance(_resolvedType);
-                _property.SetValue(owner, propObject);
+                prop = Activator.CreateInstance(t);
+                wrapped[propName] = prop;
             }
-            PropGetter.SetValue(propObject, value);
+
+            var subWrap = ObjectAccessor.Create(prop);
+            return subWrap["Value"];
+        }
+
+        public void Set<T>(NetworkObject owner, T value)
+        {
+            if (owner == null) return;
+            var wrapped = ObjectAccessor.Create(owner);
+            var prop = wrapped[propName];
+
+            if (_childProperty != null)
+            {
+                var t = typeof(NetworkProperty<>);
+                t = t.MakeGenericType(_childProperty.ResolvedType);
+                if (prop == null)
+                {
+                    prop = Activator.CreateInstance(t);
+                    wrapped[propName] = prop;
+                }
+
+                var subWrap = ObjectAccessor.Create(prop);
+                subWrap["Value"] = value;
+            }
+            else
+            {
+                if (prop == null)
+                {
+                    wrapped[propName] = prop = new NetworkProperty<T>();
+                }
+                (prop as NetworkProperty<T>).Value = value;
+            }
+
+            
+        }
+
+        public void SetUnknown(NetworkObject owner, object value)
+        {
+            if (owner == null) return;
+            var wrapped = ObjectAccessor.Create(owner);
+            var prop = wrapped[propName];
+
+            var t = typeof(NetworkProperty<>);
+            t = t.MakeGenericType(resolvedType);
+            if (prop == null)
+            {
+                prop = Activator.CreateInstance(t);
+                wrapped[propName] = prop;
+            }
+
+            var subWrap = ObjectAccessor.Create(prop);
+            subWrap["Value"] = value;
+        }
+
+        internal void UnDefineObject(NetworkObject owner, Entity entity)
+        {
+            var defObj = Get<NetworkObject>(owner);
+
+            var objType = defObj.GetType();
+            var ditem = DataLookupTable.Get(objType.GetTypeInfo());
+            foreach (var prop in ditem.Properties)
+            {
+                if (prop.ChildProperty != null)
+                {
+                    prop.UnDefineObject(defObj, entity);
+                }
+            }
+            ObjectMapper.UnDefineObject(defObj, (uint)entity.UniqueId);
         }
 
         public object CreateChildProperty()
@@ -159,9 +244,9 @@ namespace Asgard.Core.Network.Data
 
         }
 
-        internal void DefineObject(object owner, Entity entity)
+        internal void DefineObject(NetworkObject owner, Entity entity)
         {
-            var defObj = Get(owner);
+            var defObj = Get<NetworkObject>(owner);
 
             var objType = defObj.GetType();
             var ditem = DataLookupTable.Get(objType.GetTypeInfo());
@@ -194,7 +279,7 @@ namespace Asgard.Core.Network.Data
         {
             foreach(var prop in Properties)
             {
-                prop.Set(objA, prop.Get(objB));
+                prop.SetUnknown(objA, prop.GetUnknown(objB));
             }
 
             objA.IsUpdated = true;

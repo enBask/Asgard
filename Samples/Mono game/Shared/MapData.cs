@@ -94,9 +94,11 @@ namespace Shared
                             (viewMap.TileHeight * _worldfactor) - 0.01f,
                             1.0f);
 
-                        body.Position = new Farseer.Framework.Vector2(
+                        body.Position = new Vector2(
                             centerPoint.X * _worldfactor,
                             centerPoint.Y * _worldfactor);
+                        body.CollisionCategories = FarseerPhysics.Dynamics.Category.Cat1;
+                        body.CollidesWith = FarseerPhysics.Dynamics.Category.Cat2;
                     }
                 }
             }

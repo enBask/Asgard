@@ -22,6 +22,7 @@ namespace Asgard.Core.Network.Packets
         private static ConcurrentDictionary<ushort, PacketData> _PacketLookup =
             new ConcurrentDictionary<ushort, PacketData>();
 
+
         private static ConcurrentDictionary<Type, ushort> _PacketReverseLookup =
             new ConcurrentDictionary<Type, ushort>();
 

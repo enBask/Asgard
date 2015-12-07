@@ -83,7 +83,6 @@ namespace Asgard.Client
                 {
                     _netAccum -= invRate;
                     SendClientState();
-                    _bifrost.Flush();
                 }
             }
         }
@@ -110,10 +109,12 @@ namespace Asgard.Client
                 {
                     if (!dObj.PlayerControlled)
                     {
-                        float perrX = (pComp.Body.Position.X + dObj.position_error_X) - dObj.Position.Value.X;
-                        float perrY = (pComp.Body.Position.Y + dObj.position_error_Y) - dObj.Position.Value.Y;
-                        dObj.position_error_X = perrX;
-                        dObj.position_error_Y = perrY;
+                        dObj.position_error = (pComp.Body.Position + dObj.position_error) - dObj.Position;
+                       
+                        if (dObj.position_error.LengthSquared() > 5f)
+                        {
+                            dObj.position_error = Farseer.Framework.Vector2.Zero;
+                        }
 
                         pComp.Body.Position = dObj.Position;
                         pComp.Body.LinearVelocity = dObj.LinearVelocity;
@@ -122,22 +123,26 @@ namespace Asgard.Client
                     dObj.IsUpdated = false;
                 }
 
+                float X = dObj.position_error.X;
+                float Y = dObj.position_error.Y;
 
-                if (Math.Abs(dObj.position_error_X) >= 0.00001f)
-                    if (Math.Abs(dObj.position_error_X) >= 1f)
-                        dObj.position_error_X *= 0.975f;
+                if (Math.Abs(dObj.position_error.X) >= 0.00001f)
+                    if (Math.Abs(dObj.position_error.X) >= 1f)
+                        X *= 0.975f;
                     else
-                        dObj.position_error_X *= 0.975f;
+                        X *= 0.975f;
                 else
-                    dObj.position_error_X = 0;
+                    X = 0;
 
-                if (Math.Abs(dObj.position_error_Y) >= 0.00001f)
-                    if (Math.Abs(dObj.position_error_Y) >= 1f)
-                        dObj.position_error_Y *= 0.975f;
+                if (Math.Abs(dObj.position_error.Y) >= 0.00001f)
+                    if (Math.Abs(dObj.position_error.Y) >= 1f)
+                        Y *= 0.975f;
                     else
-                        dObj.position_error_Y *= 0.975f;
+                        Y *= 0.975f;
                 else
-                    dObj.position_error_Y = 0;
+                    Y = 0;
+
+                dObj.position_error = new Farseer.Framework.Vector2(X, Y);
             }
            
         }
@@ -164,15 +169,36 @@ namespace Asgard.Client
 
                     if (netObj.Item2 is DefinitionNetworkObject)
                     {
-                        var ditem = DataLookupTable.Get(objType.GetTypeInfo());
-                        foreach(var prop in ditem.Properties)
+                        if ((netObj.Item2 as DefinitionNetworkObject).Destory)
                         {
-                            if (prop.ChildProperty != null)
+                            var defObA = entity.GetComponent(compType);
+                            if (defObA != null)
                             {
-                                prop.DefineObject(objB, entity);
+                                var ditem = DataLookupTable.Get(objType.GetTypeInfo());
+                                foreach (var prop in ditem.Properties)
+                                {
+                                    if (prop.ChildProperty != null)
+                                    {
+                                        prop.UnDefineObject(defObA as NetworkObject, entity);
+                                    }
+                                }
+                                ObjectMapper.UnDefineObject(defObA, entity.UniqueId);
                             }
+                            continue;
                         }
-                        ObjectMapper.DefineObject(objB, entity.UniqueId);
+                        else
+                        {
+                            var ditem = DataLookupTable.Get(objType.GetTypeInfo());
+                            foreach (var prop in ditem.Properties)
+                            {
+                                if (prop.ChildProperty != null)
+                                {
+                                    prop.DefineObject(objB, entity);
+                                }
+                            }
+                            ObjectMapper.DefineObject(objB, entity.UniqueId);
+
+                        }
                     }
 
                     var objA =  entity.GetComponent(compType); 
@@ -183,7 +209,7 @@ namespace Asgard.Client
                     else
                     {
                         var ditem = DataLookupTable.Get(objType.GetTypeInfo());
-                        ditem.Merge((NetworkObject)objA, (NetworkObject)objB);
+                        ditem.Merge((NetworkObject)objA, objB);
                     }
                 }
             }     

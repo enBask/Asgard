@@ -58,6 +58,7 @@
     <Compile Include="MapComponent.cs" />
     <Compile Include="MapData.cs" />
     <Compile Include="MonoLoginPacket.cs" />
+    <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

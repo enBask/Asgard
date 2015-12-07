@@ -28,9 +28,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono Client", "Samples\Mono game\Mono Client\Mono Client.csproj", "{952DFAF4-895F-4B78-824A-A772558620A8}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
@@ -97,6 +94,7 @@ Global
 		{45EB1DD2-C8B8-4436-8678-72D8A70D274A}.Debug|x86.ActiveCfg = Debug|x86
 		{45EB1DD2-C8B8-4436-8678-72D8A70D274A}.Debug|x86.Build.0 = Debug|x86
 		{45EB1DD2-C8B8-4436-8678-72D8A70D274A}.Release|Any CPU.ActiveCfg = Release|x86
+		{45EB1DD2-C8B8-4436-8678-72D8A70D274A}.Release|Any CPU.Build.0 = Release|x86
 		{45EB1DD2-C8B8-4436-8678-72D8A70D274A}.Release|x86.ActiveCfg = Release|x86
 		{45EB1DD2-C8B8-4436-8678-72D8A70D274A}.Release|x86.Build.0 = Release|x86
 		{952DFAF4-895F-4B78-824A-A772558620A8}.Debug|Any CPU.ActiveCfg = Debug|x86
@@ -104,6 +102,7 @@ Global
 		{952DFAF4-895F-4B78-824A-A772558620A8}.Debug|x86.ActiveCfg = Debug|x86
 		{952DFAF4-895F-4B78-824A-A772558620A8}.Debug|x86.Build.0 = Debug|x86
 		{952DFAF4-895F-4B78-824A-A772558620A8}.Release|Any CPU.ActiveCfg = Release|x86
+		{952DFAF4-895F-4B78-824A-A772558620A8}.Release|Any CPU.Build.0 = Release|x86
 		{952DFAF4-895F-4B78-824A-A772558620A8}.Release|x86.ActiveCfg = Release|x86
 		{952DFAF4-895F-4B78-824A-A772558620A8}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection

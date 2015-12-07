@@ -28,7 +28,7 @@ namespace Asgard.Core.Collections
         public void Add(List<T> data)
         {
             _buffer.Enqueue(data);
-            if (_buffer.Count > _tickRate *4)
+            if (_buffer.Count > _tickRate * 1 )
             {
                 _buffer.Dequeue();
             }

@@ -8,7 +8,6 @@ using Shared;
 using MonoGame.Extended;
 using Asgard;
 using Asgard.Core.Network.Packets;
-using Mono_Server;
 using Asgard.EntitySystems.Components;
 
 namespace Mono_Client
@@ -24,7 +23,7 @@ namespace Mono_Client
         gameClient _gameClient;
         Entity _mapEntity;
         Camera2D _camera;
-
+        float _worldSpace = 1f / 10f;
 
         public Game1()
         {
@@ -43,7 +42,7 @@ namespace Mono_Client
             // TODO: Add your initialization logic here
 
             _camera = new Camera2D(GraphicsDevice);
-            _camera.Zoom = 2.0f;
+            _camera.Zoom = 4.5f;
             _camera.Position = new Vector2(-120, -5);
 
 
@@ -71,25 +70,6 @@ namespace Mono_Client
             mapComponent.Device = GraphicsDevice;
             mapComponent.Texture = Content.Load<Texture2D>("roguelikeSheet_transparent");
             _mapEntity.AddComponent(mapComponent);
-
-            PacketFactory.AddCallback<LoginResponsePacket>(onLogin);
-
-            var bifrost = _gameClient.LookupSystem<BifrostClient>();
-            bifrost.OnConnection += Bifrost_OnConnection;
-            bifrost.Start();
-
-        }
-
-        private void Bifrost_OnConnection(Asgard.Core.Network.NetNode connection)
-        {
-            var bifrost = _gameClient.LookupSystem<BifrostClient>();
-            MonoLoginPacket packet = new MonoLoginPacket();
-            bifrost.Send(packet);
-        }
-
-        private void onLogin(LoginResponsePacket obj)
-        {
-
         }
 
         /// <summary>
@@ -124,7 +104,36 @@ namespace Mono_Client
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+
+            var renderData = _gameClient.GetPlayerData();
+            if (renderData != null)
+            {
+                _camera.LookAt(renderData.GetPosition());
+            }
+
+
             // TODO: Add your update logic here
+            var mState = Mouse.GetState();
+            if (mState.LeftButton == ButtonState.Pressed)
+            {
+                var screenPos = mState.Position.ToVector2();
+
+                if (!Window.ClientBounds.Contains(mState.Position))
+                    return;
+
+                var worldPos = _camera.ScreenToWorld(screenPos);
+                worldPos *= _worldSpace;
+                _gameClient.CurrentState.LeftMouseDown = true;
+                _gameClient.CurrentState.MousePositionInWorld = new Farseer.Framework.Vector2(worldPos.X, worldPos.Y);
+            }
+            else
+            {
+                _gameClient.CurrentState.LeftMouseDown = false;
+
+                bool isMovingTo = (renderData != null && renderData.MovingToPosition);
+                if (!isMovingTo)
+                    _gameClient.CurrentState.MousePositionInWorld = Farseer.Framework.Vector2.Zero;
+            }
 
             base.Update(gameTime);
         }
@@ -155,8 +164,7 @@ namespace Mono_Client
             foreach(var ent in ents)
             {
                 var rd = ent.GetComponent<RenderData>();
-                var pc = ent.GetComponent<Physics2dComponent>();
-                rd.UpdateFromPhysics(pc);
+                rd.UpdateFromPhysics();
                 rd.Draw(spriteBatch);
             }
             spriteBatch.End();

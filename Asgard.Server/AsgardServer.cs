@@ -44,6 +44,11 @@ namespace Asgard
             AddInternalSystem<BifrostServer>(_bifrost, 0);
         }
 
+        protected virtual bool CanPlayerSee(Entity player, Entity checkPlayer)
+        {
+            return true;
+        }
+
         protected virtual IEnumerable<Entity> GetPlayerList()
         {
             return EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent)));
@@ -107,17 +112,26 @@ namespace Asgard
             var players = GetPlayerList();
             if (players == null) return;
 
-            foreach(Entity nobj in ObjectMapper.GetEntityCache())
+            foreach (var player in players)
             {
-                var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));
-                foreach(var obj in objList)
-                {
-                    foreach (var player in players)
-                    {
-                        var playerComp = player.GetComponent<PlayerComponent>();
-                        var node = playerComp.NetworkNode;
-                        if (node == null) continue;
+                var playerComp = player.GetComponent<PlayerComponent>();
+                var node = playerComp.NetworkNode;
+                if (node == null) continue;
 
+                List<NetworkObject> fullProcList = new List<NetworkObject>();
+                foreach (Entity nobj in ObjectMapper.GetEntityCache())
+                {
+                    if (nobj != player && 
+                        nobj.HasComponent<Physics2dComponent>() && 
+                        !CanPlayerSee(player, nobj))
+                    {
+                        continue;
+                    }
+
+                    #region StateSync
+                    var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));
+                    foreach (var obj in objList)
+                    {
                         //quick hack to not send net sync data for the player controlled entity
                         //a different lag comp system is used.
                         if (obj is NetPhysicsObject)
@@ -133,27 +147,22 @@ namespace Asgard
                             }
                         }
 
-
                         var packet = new DataObjectPacket();
                         packet.SetOwnerObject(obj);
                         packet.Id = nobj.UniqueId;
 
                         _bifrost.Send(packet, node);
                     }
-                }
+                    #endregion
 
-                var defObjList = ObjectMapper.GetNetObjects(nobj, typeof(DefinitionNetworkObject));
-                foreach (var obj in defObjList)
-                {
-                    foreach (var player in players)
+                    #region DefinitionSync
+                    var defObjList = ObjectMapper.GetNetObjects(nobj, typeof(DefinitionNetworkObject));
+                    foreach (DefinitionNetworkObject obj in defObjList)
                     {
-                        var playerComp = player.GetComponent<PlayerComponent>();
-                        var node = playerComp.NetworkNode;
-                        if (node == null) continue;
-
+                        fullProcList.Add(obj);
                         if (!playerComp.IsObjectKnown(obj))
                         {
-                            playerComp.AddKnownObject(obj);
+                            playerComp.AddKnownObject(obj, nobj.UniqueId);
                             var packet = new DataObjectPacket();
                             packet.SetOwnerObject(obj);
                             packet.Id = nobj.UniqueId;
@@ -161,8 +170,30 @@ namespace Asgard
                             _bifrost.Send(packet, node, 3);
                         }
                     }
-                }       
-            }                    
+                    #endregion
+                }
+
+                //cross check the fullproc list against the known def obj list of this player
+                //this will tell us if the player is tracking an object that has been deleted
+                var deletedItems = playerComp.FindDeletedObjects(fullProcList);
+                foreach(var delObjItem in deletedItems)
+                {
+                    var delObj = delObjItem.Item1 as DefinitionNetworkObject;
+                    var nobjId = delObjItem.Item2;
+                    var marked = delObj.Destory;
+                    delObj.Destory = true;
+                    playerComp.RemoveKnownObject(delObj);
+
+
+                    var packet = new DataObjectPacket();
+                    packet.SetOwnerObject(delObj);
+                    packet.Id = nobjId;
+                    _bifrost.Send(packet, node, 3);
+
+                    if (!marked)
+                        delObj.Destory = false;
+                }
+            }                  
         }
     }
 }

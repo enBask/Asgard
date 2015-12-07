@@ -37,7 +37,7 @@ namespace Asgard.Core.Network.Packets
 
         public override void Deserialize(Bitstream msg)
         {
-            ushort objTypeId = (ushort)msg.ReadVariableUInt32();
+            ushort objTypeId = msg.ReadUInt16();
             Id = msg.ReadInt64();
 
 
@@ -53,7 +53,7 @@ namespace Asgard.Core.Network.Packets
                 return;
             }
 
-            ReadNetObject(_dItem, msg, _owner);
+            ReadNetObject(_dItem, msg, (NetworkObject)_owner);
         }
 
         public override void Serialize(Bitstream msg)
@@ -64,13 +64,23 @@ namespace Asgard.Core.Network.Packets
             }
 
             ushort objTypeId = ObjectMapper.LookupType(_ownerType);
-            msg.WriteVariableUInt32(objTypeId);
+            msg.Write(objTypeId);
             msg.Write(Id);
-            WriteNetObject(_dItem, msg, _owner);
+            WriteNetObject(_dItem, msg, (NetworkObject)_owner);
         }
 
-        private void ReadNetObject(DataSerializationItem item, Bitstream msg, object owner)
+        private void ReadNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner)
         {
+            if (owner is DefinitionNetworkObject)
+            {
+                var d = msg.ReadBool();
+                if (d)
+                {
+                    (owner as DefinitionNetworkObject).Destory = true;
+                    return;
+                }
+            }
+
             foreach (var prop in item.Properties)
             {
                 switch (prop.Type)
@@ -79,12 +89,16 @@ namespace Asgard.Core.Network.Packets
                         prop.Set(owner, msg.ReadBool());
                         break;
                     case DataTypes.UBYTE:
+                        prop.Set(owner, msg.ReadByte());
+                        break;
                     case DataTypes.UINT:
-                        prop.Set(owner, msg.ReadVariableUInt32());
+                        prop.Set(owner, msg.ReadUInt32());
                         break;
                     case DataTypes.BYTE:
+                        prop.Set(owner, msg.ReadSByte());
+                        break;
                     case DataTypes.INT:
-                        prop.Set(owner, msg.ReadVariableInt32());
+                        prop.Set(owner, msg.ReadInt32());
                         break;
                     case DataTypes.ULONG:
                         prop.Set(owner, msg.ReadUInt64());
@@ -108,7 +122,7 @@ namespace Asgard.Core.Network.Packets
                         var childProp = prop.ChildProperty;
                         if (childProp != null)
                         {
-                            var o = prop.CreateChildProperty();
+                            var o = (NetworkObject)prop.CreateChildProperty();
                             if (o != null)
                             {
                                 ReadNetObject(childProp, msg, o);
@@ -120,46 +134,63 @@ namespace Asgard.Core.Network.Packets
             }
         }
 
-        private void WriteNetObject(DataSerializationItem item, Bitstream msg, object owner)
+        private void WriteNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner)
         {
+            if (owner is DefinitionNetworkObject)
+            {
+                if ((owner as DefinitionNetworkObject).Destory)
+                {
+                    msg.Write(true);
+                    return;
+                }
+                else
+                {
+                    msg.Write(false);
+                }
+            }
+
             foreach (var prop in item.Properties)
             {
                 switch (prop.Type)
                 {
                     case DataTypes.BOOL:
-                        msg.Write((bool)prop.Get(owner));
+                        msg.Write(prop.Get<bool>(owner));
                         break;
                     case DataTypes.UBYTE:
+                        msg.Write(prop.Get<byte>(owner));
+                        break;
                     case DataTypes.UINT:
-                        msg.WriteVariableUInt32((uint)prop.Get(owner));
+                        msg.Write(prop.Get<uint>(owner));
                         break;
                     case DataTypes.BYTE:
+                        msg.Write(prop.Get<sbyte>(owner));
+                        break;
                     case DataTypes.INT:
-                        msg.WriteVariableInt32((int)prop.Get(owner));
+                        msg.Write(prop.Get<int>(owner));
                         break;
                     case DataTypes.ULONG:
-                        msg.Write((ulong)prop.Get(owner));
+                        msg.Write(prop.Get<ulong>(owner));
                         break;
                     case DataTypes.LONG:
-                        msg.Write((long)prop.Get(owner));
+                        msg.Write(prop.Get<long>(owner));
                         break;
                     case DataTypes.FLOAT:
-                        msg.Write((float)prop.Get(owner));
+                        msg.Write(prop.Get<float>(owner));
                         break;
                     case DataTypes.DOUBLE:
-                        msg.Write((double)prop.Get(owner));
+                        msg.Write(prop.Get<double>(owner));
                         break;
                     case DataTypes.STRING:
-                        msg.Write((string)prop.Get(owner));
+                        msg.Write(prop.Get<string>(owner));
                         break;
                     case DataTypes.VECTOR2:
-                        msg.Write((Vector2)prop.Get(owner));
+                        msg.Write(prop.Get<Vector2>(owner));
                         break;
                     case DataTypes.NETPROP:
                         var childProp = prop.ChildProperty;
                         if (childProp != null)
                         {
-                            var o = prop.Get(owner);
+                            var o = prop.Get<NetworkObject>(owner);
                             WriteNetObject(childProp, msg, o);
                         }
                         break;

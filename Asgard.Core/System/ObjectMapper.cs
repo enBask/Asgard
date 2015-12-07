@@ -72,6 +72,14 @@ namespace Asgard.Core.System
                 (obj as DefinitionNetworkObject).OnCreated(_instance, entity);
             }
         }
+        internal static void UnDefineObject(object obj, long entityId)
+        {
+            if (obj is DefinitionNetworkObject)
+            {
+                var entity = _manager.GetEntityByUniqueId(entityId);
+                (obj as DefinitionNetworkObject).OnDestoryed(_instance, entity);
+            }
+        }
 
         public static NetworkObject Lookup(long id, ushort typeId)
         {
@@ -158,7 +166,14 @@ namespace Asgard.Core.System
         {
             Entity ent = null;
             if (id != 0)
+            {
                 ent = _manager.GetEntityByUniqueId(id);
+                if (ent == null)
+                {
+                    ent = _manager.Create(id);
+                    _netObjectCache[ent] = new List<NetworkObject>();
+                }
+            }
 
             if (ent == null)
             {
@@ -166,14 +181,29 @@ namespace Asgard.Core.System
                 _netObjectCache[ent] = new List<NetworkObject>();
             }
 
+
             return ent;
         }
 
         public static void DestoryEntity(Entity ent)
         {
+            List<NetworkObject> objCache;
+            if (_netObjectCache.TryGetValue(ent, out objCache))
+            {
+                _netObjectCache.Remove(ent);
+
+                foreach(var obj in objCache)
+                {
+                    if (obj is DefinitionNetworkObject)
+                    {
+                        (obj as DefinitionNetworkObject).Destory = true;
+                    }
+                }
+            }
             _manager.Remove(ent);
-            _netObjectCache.Remove(ent);
+            
         }
+       
 
         public static void StartSnapshot()
         {

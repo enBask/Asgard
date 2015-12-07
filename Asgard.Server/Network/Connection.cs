@@ -79,12 +79,12 @@ namespace Asgard
             config.MaximumConnections = maxconnections;
 
             config.AcceptIncomingConnections = true;
-//             config.AutoExpandMTU = true;
+            config.AutoExpandMTU = true;
             config.UseMessageRecycling = true;
 
-//             config.SimulatedLoss = 0.01f;
-//             config.SimulatedMinimumLatency = 0.05f;
-//             config.SimulatedRandomLatency = 0.05f;
+//              config.SimulatedLoss = 0.01f;
+//              config.SimulatedMinimumLatency = 0.05f;
+//              config.SimulatedRandomLatency = 0.05f;
 
             _serverInstance = new NetServer(config);
 

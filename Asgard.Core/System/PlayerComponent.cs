@@ -6,6 +6,7 @@ using Asgard.Core.System;
 using FarseerPhysics.Dynamics;
 using Farseer.Framework;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace Asgard.EntitySystems.Components
@@ -22,14 +23,13 @@ namespace Asgard.EntitySystems.Components
         public float LerpStart { get; set; }
         public float LerpEnd { get; set; }
 
-
-        private List<WeakReference<NetworkObject>> _knownObjects { get; set; }
+        private Dictionary<NetworkObject, long> _knownObjects;
 
         public PlayerComponent(NetNode networkNode)
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
-            _knownObjects = new List<WeakReference<NetworkObject>>();
+            _knownObjects = new Dictionary<NetworkObject, long>();
         }
 
         public PlayerStateData GetNextState()
@@ -43,40 +43,39 @@ namespace Asgard.EntitySystems.Components
             return CurrentState;
         }
 
-        public void AddKnownObject(NetworkObject obj)
+        public void AddKnownObject(NetworkObject obj, long eId)
         {
             if (!IsObjectKnown(obj))
             {
-                WeakReference<NetworkObject> weakRef = new WeakReference<NetworkObject>(obj);
-                _knownObjects.Add(weakRef);
+                _knownObjects.Add(obj, eId);
             }
         }
 
         public bool IsObjectKnown(NetworkObject obj)
         {
-            bool bFound = false;
-            List<WeakReference<NetworkObject>> outOfScope = new List<WeakReference<NetworkObject>>();
-            foreach(var weakRef in _knownObjects)
+            return _knownObjects.ContainsKey(obj);
+        }
+
+        public List<Tuple<NetworkObject,long>> FindDeletedObjects(List<NetworkObject> fullList)
+        {
+            //get the known object list as a simple collection
+            var objList = _knownObjects.Keys.AsEnumerable();
+
+            //cross the two lists to get the missing set.
+            var missingItems = objList.Except(fullList);
+            var retList = missingItems.Select(n =>
             {
-                NetworkObject netObj;
-                weakRef.TryGetTarget(out netObj);
-                if (netObj == null)
-                {
-                    outOfScope.Add(weakRef);
-                    continue;
-                }
-                else if (netObj == obj)
-                {
-                    bFound = true;
-                    break;
-                }
-            }
+                var id = _knownObjects[n];
+                return new Tuple<NetworkObject, long>(n, id);
+            });
 
-            foreach (var scope in outOfScope)
-                _knownObjects.Remove(scope);
+            return retList.ToList();
+        }
 
-            return bFound;
-            
+        public void RemoveKnownObject(NetworkObject obj)
+        {
+            if (_knownObjects.ContainsKey(obj))
+                _knownObjects.Remove(obj);
         }
     }
 }

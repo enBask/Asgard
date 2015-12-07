@@ -130,15 +130,14 @@ namespace Mono_Server
             var viewmap = _mapEntity.GetComponent<MapComponent>().Map;
             viewmap.Draw(_camera);
 
-            var ents = _gameServer.EntityManager.GetEntities(Aspect.All(typeof(RenderData), typeof(Physics2dComponent)));
+            var ents = _gameServer.EntityManager.GetEntities(Aspect.All(typeof(RenderData), typeof(PlayerComponent)));
             var viewMatrix = _camera.GetViewMatrix();
             spriteBatch.Begin(transformMatrix: viewMatrix);
             foreach(var ent in ents)
             {
                 var renderData = ent.GetComponent<RenderData>();
-                var phyData = ent.GetComponent<Physics2dComponent>();
 
-                renderData.UpdateFromPhysics(phyData);
+                renderData.UpdateFromPhysics();
                 renderData.Draw(spriteBatch);
             }
             spriteBatch.End();
