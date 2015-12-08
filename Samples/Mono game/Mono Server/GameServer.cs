@@ -121,9 +121,9 @@ namespace Mono_Server
                     }
                     else
                     {
-                        diff = new Vector2(
-                            diff.X / Math.Abs(diff.X),
-                             diff.Y / Math.Abs(diff.Y)
+                        diff = new Vector2(                            
+                            (diff.X != 0f && !float.IsNaN(diff.X)) ? diff.X / Math.Abs(diff.X) : 0f,
+                            (diff.Y != 0f && !float.IsNaN(diff.Y)) ? diff.Y / Math.Abs(diff.Y) : 0f
                             );
 
                         renderData.SetSpeed(player, diff);
