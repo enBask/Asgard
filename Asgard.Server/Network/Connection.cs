@@ -50,16 +50,27 @@ namespace Asgard
             if (Peer == null || Peer.Statistics == null)
                 return null;
 
-            //if (_stats == null)
+            if (_stats == null)
             {
                 _lastNetCheck = (float)Lidgren.Network.NetTime.Now;
                 _stats = new NetStats();
+                _stats.TotalInBytes = Peer.Statistics.ReceivedBytes;
+                _stats.TotalOutBytes = Peer.Statistics.SentBytes;
             }
 
             var diff = (float)Lidgren.Network.NetTime.Now - _lastNetCheck;
 
-            _stats.BytesInPerSec = Peer.Statistics.ReceivedBytes;// / diff;
-            _stats.BytesOutPerSec = Peer.Statistics.SentBytes;// / diff;
+            if (diff > 10f)
+            {
+                _lastNetCheck = (float)Lidgren.Network.NetTime.Now;
+                _stats = new NetStats();
+                _stats.TotalInBytes = Peer.Statistics.ReceivedBytes;
+                _stats.TotalOutBytes = Peer.Statistics.SentBytes;
+                return _stats;
+            }
+
+            _stats.BytesInPerSec = (float)Math.Round((Peer.Statistics.ReceivedBytes - _stats.TotalInBytes) / diff,2);
+            _stats.BytesOutPerSec = (float)Math.Round((Peer.Statistics.SentBytes - _stats.TotalOutBytes) / diff,2);
 
             return _stats;
         }

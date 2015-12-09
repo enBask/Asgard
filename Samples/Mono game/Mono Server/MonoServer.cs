@@ -16,6 +16,9 @@ using Artemis;
 using Asgard.EntitySystems.Components;
 using Shared;
 using Asgard.Core.System;
+using MonoGame.Extended.BitmapFonts;
+using Asgard;
+using Asgard.Core.Network;
 
 namespace Mono_Server
 {
@@ -30,7 +33,7 @@ namespace Mono_Server
         Camera2D _camera;
         float _worldfactor = 1f / 10f;
         Texture2D _lineTexture;
-
+        BitmapFont _font;
 
         Entity _mapEntity;
 
@@ -91,6 +94,7 @@ namespace Mono_Server
             var mapData = (MapData)ObjectMapper.Create(_mapEntity.UniqueId, typeof(MapData));
             mapData.Load(_gameServer, viewMap);
 
+            _font = Content.Load<BitmapFont>("hack_font");
         }
 
 
@@ -142,37 +146,64 @@ namespace Mono_Server
             }
             spriteBatch.End();
 
-//             var midgard = _gameServer.LookupSystem<Midgard>();
-//             var world = midgard.GetWorld();
-//             var bodies = world.BodyList;
-// 
-//             spriteBatch.Begin(transformMatrix: viewMatrix);
-// 
-//             foreach (var body in bodies)
-//             {
-//                 foreach(var fix in body.FixtureList)
-//                 {
-//                     var poly = fix.Shape as PolygonShape;
-//                     Transform xf;
-//                     body.GetTransform(out xf);
-// 
-//                     Vector2[] data = new Vector2[4];
-//                     for (int i = 0; i < poly.Vertices.Count; i++)
-//                     {
-//                         Farseer.Framework.Vector2 tmp = MathUtils.Mul(ref xf, poly.Vertices[i]);
-//                         data[i] = new Vector2(tmp.X * 10f, tmp.Y * 10f);
-//                     }
-// 
-//                     DrawLine(spriteBatch, data[0], data[1]);
-//                     DrawLine(spriteBatch, data[1], data[2]);
-//                     DrawLine(spriteBatch, data[2], data[3]);
-//                     DrawLine(spriteBatch, data[3], data[0]);
-//                 }
-//             }
-//             spriteBatch.End();
+            //             var midgard = _gameServer.LookupSystem<Midgard>();
+            //             var world = midgard.GetWorld();
+            //             var bodies = world.BodyList;
+            // 
+            //             spriteBatch.Begin(transformMatrix: viewMatrix);
+            // 
+            //             foreach (var body in bodies)
+            //             {
+            //                 foreach(var fix in body.FixtureList)
+            //                 {
+            //                     var poly = fix.Shape as PolygonShape;
+            //                     Transform xf;
+            //                     body.GetTransform(out xf);
+            // 
+            //                     Vector2[] data = new Vector2[4];
+            //                     for (int i = 0; i < poly.Vertices.Count; i++)
+            //                     {
+            //                         Farseer.Framework.Vector2 tmp = MathUtils.Mul(ref xf, poly.Vertices[i]);
+            //                         data[i] = new Vector2(tmp.X * 10f, tmp.Y * 10f);
+            //                     }
+            // 
+            //                     DrawLine(spriteBatch, data[0], data[1]);
+            //                     DrawLine(spriteBatch, data[1], data[2]);
+            //                     DrawLine(spriteBatch, data[2], data[3]);
+            //                     DrawLine(spriteBatch, data[3], data[0]);
+            //                 }
+            //             }
+            //             spriteBatch.End();
 
-
+            DrawStats(spriteBatch, gameTime);
             base.Draw(gameTime);
+        }
+
+        double epoc = 0f;
+        NetStats stats = new NetStats();
+        int clientCount = 0;
+        private void DrawStats(SpriteBatch batch, GameTime gameTime)
+        {
+            epoc += gameTime.ElapsedGameTime.TotalSeconds;
+            if (epoc >= 0.1)
+            {
+                epoc = 0f;
+                var bifrost = _gameServer.LookupSystem<BifrostServer>();
+                stats = bifrost.GetStats();
+
+                clientCount = _gameServer.EntityManager.GetEntities(Aspect.One(typeof(PlayerComponent))).Count;
+            }
+            if (stats == null) return;
+
+            var scale = Matrix.CreateScale(0.5f);
+            batch.Begin(transformMatrix: scale);
+            batch.DrawString(_font, "In Kbps: " + Math.Round(stats.BytesInPerSec/1024f * 8f,1), new Vector2(1320, 10), Color.Red);
+            batch.DrawString(_font, "Out Kbps: " + Math.Round(stats.BytesOutPerSec/ 1024f * 8f, 1), new Vector2(1305, 40), Color.Red);
+            batch.DrawString(_font, "Clients: " + clientCount, new Vector2(1320, 70), Color.Red);
+
+
+            batch.End();
+
         }
 
         void DrawPoint(SpriteBatch sb, Vector2 point)

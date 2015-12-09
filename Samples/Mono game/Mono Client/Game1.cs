@@ -9,6 +9,8 @@ using MonoGame.Extended;
 using Asgard;
 using Asgard.Core.Network.Packets;
 using Asgard.EntitySystems.Components;
+using Asgard.Core.Network;
+using MonoGame.Extended.BitmapFonts;
 
 namespace Mono_Client
 {
@@ -24,6 +26,7 @@ namespace Mono_Client
         Entity _mapEntity;
         Camera2D _camera;
         float _worldSpace = 1f / 10f;
+        BitmapFont _font;
 
         public Game1()
         {
@@ -82,7 +85,7 @@ namespace Mono_Client
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-
+            _font = Content.Load<BitmapFont>("hack_font");
         }
 
         /// <summary>
@@ -169,7 +172,33 @@ namespace Mono_Client
             }
             spriteBatch.End();
 
+            DrawStats(spriteBatch, gameTime);
             base.Draw(gameTime);
+        }
+
+        double epoc = 0f;
+        NetStats stats = new NetStats();
+        private void DrawStats(SpriteBatch batch, GameTime gameTime)
+        {
+            epoc += gameTime.ElapsedGameTime.TotalSeconds;
+            if (epoc >= 0.1)
+            {
+                epoc = 0f;
+                var bifrost = _gameClient.LookupSystem<BifrostClient>();
+                stats = bifrost.GetStats();
+            }
+
+            if (stats == null) return;
+
+            var scale = Matrix.CreateScale(0.5f);
+            batch.Begin(transformMatrix: scale);
+            batch.DrawString(_font, "In Kbps: " + Math.Round(stats.BytesInPerSec / 1024f * 8f, 1), new Vector2(1320, 10), Color.Red);
+            batch.DrawString(_font, "Out Kbps: " + Math.Round(stats.BytesOutPerSec / 1024f * 8f, 1), new Vector2(1305, 40), Color.Red);
+            batch.DrawString(_font, "Ping: " + Math.Round(stats.AvgPing,2) + "ms", new Vector2(1370, 70), Color.Red);
+
+
+            batch.End();
+
         }
     }
 }

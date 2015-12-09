@@ -10,6 +10,8 @@
 
 #-------------------------------- References --------------------------------#
 
+/reference:..\..\..\..\packages\MonoGame.Extended.0.3.44-alpha\lib\MonoGame.Extended.Content.Pipeline.dll
+/reference:
 
 #---------------------------------- Content ---------------------------------#
 
@@ -34,4 +36,20 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:TextureFormat=Color
 /build:roguelikeChar_transparent.png
+
+#begin hack_font.fnt
+/importer:BitmapFontImporter
+/processor:BitmapFontProcessor
+/build:hack_font.fnt
+
+#begin hack_font_0.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:TextureFormat=Color
+/build:hack_font_0.png
 

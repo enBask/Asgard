@@ -60,18 +60,29 @@ namespace Asgard
             if (Peer == null || Peer.Statistics == null || Peer.Connections.Count == 0)
                 return null;
 
-            //if (_stats == null)
+            if (_stats == null)
             {
                 _lastNetCheck = (float)Lidgren.Network.NetTime.Now;
                 _stats = new NetStats();
+                _stats.TotalInBytes = Peer.Statistics.ReceivedBytes;
+                _stats.TotalOutBytes = Peer.Statistics.SentBytes;
             }
 
             var diff = (float)Lidgren.Network.NetTime.Now - _lastNetCheck;
 
-            _stats.BytesInPerSec = Peer.Statistics.ReceivedBytes;// / diff;
-            _stats.BytesOutPerSec = Peer.Statistics.SentBytes;// / diff;
-            _stats.AvgPing = Peer.Connections[0].AverageRoundtripTime;
+            if (diff > 10f)
+            {
+                _lastNetCheck = (float)Lidgren.Network.NetTime.Now;
+                _stats = new NetStats();
+                _stats.TotalInBytes = Peer.Statistics.ReceivedBytes;
+                _stats.TotalOutBytes = Peer.Statistics.SentBytes;
+                _stats.AvgPing = Peer.Connections[0].AverageRoundtripTime/2f*1000f;
+                return _stats;
+            }
 
+            _stats.BytesInPerSec = (float)Math.Round((Peer.Statistics.ReceivedBytes - _stats.TotalInBytes) / diff, 2);
+            _stats.BytesOutPerSec = (float)Math.Round((Peer.Statistics.SentBytes - _stats.TotalOutBytes) / diff, 2);
+            _stats.AvgPing = Peer.Connections[0].AverageRoundtripTime/2f*1000f;
             return _stats;
         }
 
@@ -92,9 +103,9 @@ namespace Asgard
 //             config.UseMessageRecycling = true;
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
 
-//             config.SimulatedLoss = 0.01f;
-//             config.SimulatedMinimumLatency = 0.05f;
-//             config.SimulatedRandomLatency = 0.05f;
+            config.SimulatedLoss = 0.01f;
+            config.SimulatedMinimumLatency = 0.2f;
+            config.SimulatedRandomLatency = 0.05f;
 
 
             IPAddress address = NetUtility.Resolve(host);

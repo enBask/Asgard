@@ -8,6 +8,9 @@ namespace Asgard.Core.Network
 {
     public class NetStats
     {
+        public float TotalInBytes { get; set; }
+        public float TotalOutBytes { get; set; }
+
         public float BytesInPerSec { get; set; }
         public float BytesOutPerSec { get; set; }
         public float AvgPing { get; set; }
