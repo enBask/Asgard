@@ -30,6 +30,20 @@ namespace Asgard.Core.Network.Data
             _owned = true;
         }
 
+        internal NetworkObject NetworkClone()
+        {
+            var type = this.GetType();
+            var dItem = DataLookupTable.Get(type.GetTypeInfo());
+
+            var clone = Activator.CreateInstance(type) as NetworkObject;
+            foreach(var prop in dItem.Properties)
+            {
+                prop.NetworkClone(clone, this);
+            }
+
+            return clone;
+        }
+
         public bool IsUpdated { get; set; }
     }
 

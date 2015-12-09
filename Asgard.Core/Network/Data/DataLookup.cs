@@ -201,6 +201,47 @@ namespace Asgard.Core.Network.Data
             
         }
 
+        public void NetworkClone(NetworkObject owner, object value)
+        {
+            if (owner == null) return;
+            var wrapped = ObjectAccessor.Create(owner);
+            var prop = wrapped[propName];
+
+            var valWrap = ObjectAccessor.Create(value);
+            var valProp = valWrap[propName];
+            if (valProp == null) return;
+
+
+            var t = typeof(NetworkProperty<>);
+            t = t.MakeGenericType(resolvedType);
+            if (prop == null)
+            {
+                prop = Activator.CreateInstance(t);
+                wrapped[propName] = prop;
+            }
+
+            var subWrap = ObjectAccessor.Create(prop);
+            var subValWrap = ObjectAccessor.Create(valProp);
+
+            if (_childProperty != null)
+            {
+                NetworkObject netObj = subValWrap["Value"] as NetworkObject;
+                subWrap["Value"] = netObj.NetworkClone();
+            }
+            else
+            {
+                subWrap["Value"] = subValWrap["Value"];
+            }
+        }
+
+        internal bool CheckBaseline<T>(NetworkObject owner, NetworkObject _baseLine)
+            where T : struct
+        {
+            var a = Get<T>(owner);
+            var b = Get<T>(_baseLine);
+            return a.Equals(b);
+        }
+
         public void SetUnknown(NetworkObject owner, object value)
         {
             if (owner == null) return;

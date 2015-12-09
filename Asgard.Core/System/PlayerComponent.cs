@@ -24,26 +24,31 @@ namespace Asgard.EntitySystems.Components
         public float LerpEnd { get; set; }
 
         private Dictionary<NetworkObject, long> _knownObjects;
+        private Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaBuffer;
+            
 
         public PlayerComponent(NetNode networkNode)
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
             _knownObjects = new Dictionary<NetworkObject, long>();
+            _deltaBuffer = 
+                new Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>>();
         }
 
         public PlayerStateData GetNextState()
         {
             var states = InputBuffer.Get();
-            if (states != null && states.Count > 0)
+            if (states != null)
             {
-                CurrentState = states[0];
+                CurrentState = states;
             }
 
             return CurrentState;
         }
 
-        public void AddKnownObject(NetworkObject obj, long eId)
+        #region object tracking for remote create/delete
+        internal void AddKnownObject(NetworkObject obj, long eId)
         {
             if (!IsObjectKnown(obj))
             {
@@ -51,12 +56,12 @@ namespace Asgard.EntitySystems.Components
             }
         }
 
-        public bool IsObjectKnown(NetworkObject obj)
+        internal bool IsObjectKnown(NetworkObject obj)
         {
             return _knownObjects.ContainsKey(obj);
         }
 
-        public List<Tuple<NetworkObject,long>> FindDeletedObjects(List<NetworkObject> fullList)
+        internal List<Tuple<NetworkObject,long>> FindDeletedObjects(List<NetworkObject> fullList)
         {
             //get the known object list as a simple collection
             var objList = _knownObjects.Keys.AsEnumerable();
@@ -72,10 +77,40 @@ namespace Asgard.EntitySystems.Components
             return retList.ToList();
         }
 
-        public void RemoveKnownObject(NetworkObject obj)
+        internal void RemoveKnownObject(NetworkObject obj)
         {
             if (_knownObjects.ContainsKey(obj))
                 _knownObjects.Remove(obj);
         }
+        #endregion
+
+        internal void AddDeltaState(Dictionary<int, NetworkObject> syncState)
+        {
+            var deltaState = new Tuple<uint, Dictionary<int, NetworkObject>>
+                (
+                NetTime.SimTick,
+                syncState
+                );
+            _deltaBuffer.AddToTail(deltaState);
+        }
+
+        internal Tuple<uint, Dictionary<int, NetworkObject>> GetDeltaBaseline()
+        {
+            if (_deltaBuffer.First == null) return null;
+            return _deltaBuffer.First.Value;
+        }
+
+        internal void AckDeltaBaseline(uint simTick)
+        {
+            foreach(var node in _deltaBuffer)
+            {
+                if (node.Value.Item1 == simTick)
+                {
+                    _deltaBuffer.TruncateTo(node);
+                    return;
+                }
+            }
+        }
+
     }
 }

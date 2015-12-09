@@ -60,9 +60,7 @@ namespace Mono_Server
 
             foreach (var inp in clientState.State)
             {
-                var l = new List<PlayerStateData>();
-                l.Add(inp);
-                playerComp.InputBuffer.Add(l);
+                playerComp.InputBuffer.Add(inp);
             }
         }
 

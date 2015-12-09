@@ -29,7 +29,7 @@ namespace Asgard.Client
 
         public delegate void AsgardClientCallback();
 
-        JitterBuffer<Tuple<Entity,NetworkObject>> _jitterBuffer;
+        JitterBuffer<List<Tuple<Entity,NetworkObject>>> _jitterBuffer;
         double _netAccum = 0;
         BifrostClient _bifrost = null;
         NetConfig _netConfig;
@@ -46,7 +46,7 @@ namespace Asgard.Client
 
             float delay_amount = (float)Math.Round((1f / _netConfig.Tickrate) * 6f, 2);
 
-            _jitterBuffer = new JitterBuffer<Tuple<Entity, NetworkObject>>(_netConfig.Tickrate);
+            _jitterBuffer = new JitterBuffer<List<Tuple<Entity, NetworkObject>>>(_netConfig.Tickrate);
 
         }
 

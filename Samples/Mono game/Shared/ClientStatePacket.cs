@@ -11,6 +11,7 @@ namespace Shared
     public class ClientStatePacket : Packet
     {
         public int SnapId { get; set; }
+        public uint AckSyncId { get; set; }
         public List<PlayerStateData> State { get; set; }
 
 

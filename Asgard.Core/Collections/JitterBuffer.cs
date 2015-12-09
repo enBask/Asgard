@@ -14,7 +14,7 @@ namespace Asgard.Core.Collections
     public class JitterBuffer<T>
         where T : class
     {
-        private Queue<List<T>> _buffer;
+        private Queue<T> _buffer;
         bool started = false;
         float _startTime = 0f;
         float _tickRate;
@@ -22,10 +22,10 @@ namespace Asgard.Core.Collections
         public JitterBuffer(float tickRate)
         {
             _tickRate = tickRate;
-            _buffer = new Queue<List<T>>();
+            _buffer = new Queue<T>();
         }
 
-        public void Add(List<T> data)
+        public void Add(T data)
         {
             _buffer.Enqueue(data);
             if (_buffer.Count > _tickRate * 1 )
@@ -40,7 +40,7 @@ namespace Asgard.Core.Collections
             }
         }
 
-        public List<T> Get()
+        public T Get()
         {
             if (!started) return null;
 

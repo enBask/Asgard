@@ -115,6 +115,13 @@ namespace Asgard
             foreach (var player in players)
             {
                 var playerComp = player.GetComponent<PlayerComponent>();
+
+                var baselineState = playerComp.GetDeltaBaseline();
+                var usebaseLine = (baselineState != null);
+                Dictionary<int, NetworkObject> deltaState =
+                   new Dictionary<int, NetworkObject>();
+
+
                 var node = playerComp.NetworkNode;
                 if (node == null) continue;
 
@@ -132,24 +139,38 @@ namespace Asgard
                     var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));
                     foreach (var obj in objList)
                     {
+                        var clone = obj.NetworkClone();
                         //quick hack to not send net sync data for the player controlled entity
                         //a different lag comp system is used.
-                        if (obj is NetPhysicsObject)
+                        if (clone is NetPhysicsObject)
                         {
-                            (obj as NetPhysicsObject).PlayerControlled = false;
+                            (clone as NetPhysicsObject).PlayerControlled = false;
                             var pComp = nobj.GetComponent<PlayerComponent>();
                             if (pComp != null)
                             {
                                 if (pComp.NetworkNode == node)
                                 {
-                                    (obj as NetPhysicsObject).PlayerControlled = true;
+                                    (clone as NetPhysicsObject).PlayerControlled = true;
                                 }
                             }
                         }
 
+                        deltaState.Add(obj.GetHashCode(), clone);
+
                         var packet = new DataObjectPacket();
-                        packet.SetOwnerObject(obj);
+                        packet.SetOwnerObject(clone);
                         packet.Id = nobj.UniqueId;
+
+                        if (usebaseLine)
+                        {
+                            NetworkObject baselineObj;
+                            baselineState.Item2.TryGetValue(obj.GetHashCode(), out baselineObj);
+                            if (baselineObj != null)
+                            {
+                                packet.BaselineId = baselineState.Item1;
+                                packet.SetBaseline(baselineObj);
+                            }
+                        }
 
                         _bifrost.Send(packet, node);
                     }
@@ -173,6 +194,7 @@ namespace Asgard
                     #endregion
                 }
 
+                #region handle removed DefinitionNetworkObjects
                 //cross check the fullproc list against the known def obj list of this player
                 //this will tell us if the player is tracking an object that has been deleted
                 var deletedItems = playerComp.FindDeletedObjects(fullProcList);
@@ -193,6 +215,9 @@ namespace Asgard
                     if (!marked)
                         delObj.Destory = false;
                 }
+                #endregion
+
+                playerComp.AddDeltaState(deltaState);
             }                  
         }
     }
