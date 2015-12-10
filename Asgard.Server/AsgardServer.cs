@@ -15,6 +15,7 @@ using Asgard.Core.Interpolation;
 using Asgard.Core.Network.Data;
 using Asgard.Core.Physics;
 using Asgard.EntitySystems.Components;
+using Asgard.EntitySystems;
 
 namespace Asgard
 {
@@ -41,7 +42,26 @@ namespace Asgard
             _phyConfig = Config.Get<PhysicsConfig>("physics");
 
             _bifrost = new BifrostServer(_netConfig.Port, _netConfig.MaxConnections);
-            AddInternalSystem<BifrostServer>(_bifrost, 0);
+            AddInternalSystem(_bifrost, 0);
+
+            PacketFactory.AddCallback<AckStatePacket>(OnAckState);
+        }
+
+        private void OnAckState(AckStatePacket obj)
+        {
+            var playerSys = LookupSystem<PlayerSystem>();
+            if (playerSys != null)
+            {
+                var player = playerSys.Get(obj.Connection);
+                if (player != null)
+                {
+                    var playerComp = player.GetComponent<PlayerComponent>();
+                    if (playerComp != null)
+                    {
+                        playerComp.AckDeltaBaseline(obj.SimId);
+                    }
+                }
+            }
         }
 
         protected virtual bool CanPlayerSee(Entity player, Entity checkPlayer)
@@ -117,7 +137,7 @@ namespace Asgard
                 var playerComp = player.GetComponent<PlayerComponent>();
 
                 var baselineState = playerComp.GetDeltaBaseline();
-                var usebaseLine = (baselineState != null);
+                var usebaseLine = (baselineState != null && baselineState.Item1 != 0);
                 Dictionary<int, NetworkObject> deltaState =
                    new Dictionary<int, NetworkObject>();
 
@@ -126,6 +146,10 @@ namespace Asgard
                 if (node == null) continue;
 
                 List<NetworkObject> fullProcList = new List<NetworkObject>();
+                List<Tuple<uint, NetworkObject>> _stateSendList = new List<Tuple<uint, NetworkObject>>();
+                List<Tuple<uint, NetworkObject>> _defSendList = new List<Tuple<uint, NetworkObject>>();
+                Dictionary<int, NetworkObject> packetBaseState = new Dictionary<int, NetworkObject>();
+
                 foreach (Entity nobj in ObjectMapper.GetEntityCache())
                 {
                     if (nobj != player && 
@@ -144,7 +168,7 @@ namespace Asgard
                         //a different lag comp system is used.
                         if (clone is NetPhysicsObject)
                         {
-                            (clone as NetPhysicsObject).PlayerControlled = false;
+                            //(clone as NetPhysicsObject).PlayerControlled = false;
                             var pComp = nobj.GetComponent<PlayerComponent>();
                             if (pComp != null)
                             {
@@ -152,28 +176,29 @@ namespace Asgard
                                 {
                                     (clone as NetPhysicsObject).PlayerControlled = true;
                                 }
+                                else
+                                {
+                                    (clone as NetPhysicsObject).SimTick = 0; //don't send this to other clients
+                                }
                             }
-                        }
-
-                        deltaState.Add(obj.GetHashCode(), clone);
-
-                        var packet = new DataObjectPacket();
-                        packet.SetOwnerObject(clone);
-                        packet.Id = nobj.UniqueId;
-
-                        if (usebaseLine)
-                        {
-                            NetworkObject baselineObj;
-                            baselineState.Item2.TryGetValue(obj.GetHashCode(), out baselineObj);
-                            if (baselineObj != null)
+                            else
                             {
-                                packet.BaselineId = baselineState.Item1;
-                                packet.SetBaseline(baselineObj);
+                                int ack = 0;
                             }
                         }
 
-                        _bifrost.Send(packet, node);
+                        NetworkObject baseClone = null;
+                        if (baselineState != null)
+                        {
+                            baselineState.Item2.TryGetValue(obj.GetHashCode(), out baseClone);
+                        }
+                        deltaState.Add(obj.GetHashCode(), clone);
+                        packetBaseState.Add(clone.GetHashCode(), baseClone);
+
+                        _stateSendList.Add(new Tuple<uint, NetworkObject>((uint)nobj.UniqueId, clone));
                     }
+
+                  
                     #endregion
 
                     #region DefinitionSync
@@ -183,18 +208,38 @@ namespace Asgard
                         fullProcList.Add(obj);
                         if (!playerComp.IsObjectKnown(obj))
                         {
-                            playerComp.AddKnownObject(obj, nobj.UniqueId);
-                            var packet = new DataObjectPacket();
-                            packet.SetOwnerObject(obj);
-                            packet.Id = nobj.UniqueId;
-
-                            _bifrost.Send(packet, node, 3);
+                            playerComp.AddKnownObject(obj, (uint)nobj.UniqueId);
+                            _defSendList.Add(new Tuple<uint, NetworkObject>((uint)nobj.UniqueId, obj));
                         }
                     }
                     #endregion
                 }
 
+                if (_stateSendList.Count > 0)
+                {
+                    var packet = new DataObjectPacket();
+                    packet.Objects = _stateSendList;
+                    packet.Method = NetDeliveryMethod.UnreliableSequenced;
+                    if (usebaseLine)
+                    {
+                        packet.BaselineId = baselineState.Item1;
+                        packet.SetBaseline(packetBaseState);
+                    }
+                    _bifrost.Send(packet, node);
+                }
+
+                if (_defSendList.Count > 0)
+                {
+                    var packet = new DataObjectPacket();
+                    packet.Method = NetDeliveryMethod.ReliableOrdered;
+                    packet.Objects = _defSendList;
+                    _bifrost.Send(packet, node, 3);
+                }
+
+
+
                 #region handle removed DefinitionNetworkObjects
+                _defSendList.Clear();
                 //cross check the fullproc list against the known def obj list of this player
                 //this will tell us if the player is tracking an object that has been deleted
                 var deletedItems = playerComp.FindDeletedObjects(fullProcList);
@@ -206,14 +251,16 @@ namespace Asgard
                     delObj.Destory = true;
                     playerComp.RemoveKnownObject(delObj);
 
-
-                    var packet = new DataObjectPacket();
-                    packet.SetOwnerObject(delObj);
-                    packet.Id = nobjId;
-                    _bifrost.Send(packet, node, 3);
-
+                    _defSendList.Add(new Tuple<uint, NetworkObject>(nobjId, delObj));
                     if (!marked)
                         delObj.Destory = false;
+                }
+                if (_defSendList.Count > 0)
+                {
+                    var packet = new DataObjectPacket();
+                    packet.Method = NetDeliveryMethod.ReliableOrdered;
+                    packet.Objects = _defSendList;
+                    _bifrost.Send(packet, node, 3);
                 }
                 #endregion
 

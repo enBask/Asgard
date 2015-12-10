@@ -60,7 +60,7 @@ namespace Mono_Client
             var entity = EntityManager.GetEntityByUniqueId(id);
             if (entity == null)
             {
-                entity = EntityManager.Create(id);
+                entity = ObjectMapper.CreateEntityById(id);
             }
             PlayerComponent pComp = new PlayerComponent(null);
             entity.AddComponent(pComp);
@@ -165,7 +165,6 @@ namespace Mono_Client
             ClientStatePacket packet = new ClientStatePacket();
             packet.State = new List<PlayerStateData>(StateList);
             StateList.Clear();
-            packet.SnapId = (int)NetTime.SimTick;
             return packet;
         }
 

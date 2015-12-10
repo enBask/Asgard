@@ -6,19 +6,19 @@ using System.Threading.Tasks;
 
 namespace Asgard.Core.Network.Packets
 {
-    [Packet((ushort)PacketTypes.LOGIN_RESPONSE, NetDeliveryMethod.ReliableUnordered)]
-    public class LoginResponsePacket : Packet
+    [Packet((ushort)PacketTypes.ACK_STATE_TICK, NetDeliveryMethod.UnreliableSequenced)]
+    class AckStatePacket : Packet
     {
-        public uint OwnerEntityId { get; set; }
+        public uint SimId;
 
         public override void Deserialize(Bitstream msg)
         {
-            OwnerEntityId = msg.ReadUInt32();
+            SimId = msg.ReadUInt32();
         }
 
         public override void Serialize(Bitstream msg)
         {
-            msg.Write(OwnerEntityId);
+            msg.Write(SimId);
         }
     }
 }

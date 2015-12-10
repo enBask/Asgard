@@ -75,13 +75,13 @@ namespace Mono_Server
             var playerComponent = new PlayerComponent(obj.Connection);
             var entity = _playerSys.Add(playerComponent);
 
-            RenderData renderData = (RenderData)ObjectMapper.Create(entity.UniqueId, typeof(RenderData));
+            RenderData renderData = (RenderData)ObjectMapper.Create((uint)entity.UniqueId, typeof(RenderData));
             renderData.Set(midgard, entity, _monoServer.Content);
 
             entity.AddComponent(renderData);
 
             LoginResponsePacket packet = new LoginResponsePacket();
-            packet.OwnerEntityId = entity.UniqueId;
+            packet.OwnerEntityId = (uint)entity.UniqueId;
             _bifrost.Send(packet, obj.Connection);
         }
 
@@ -113,7 +113,6 @@ namespace Mono_Server
                     var diff = state.MousePositionInWorld - curPos;
                     if (diff.LengthSquared() <= 0.001)
                     {
-                        Trace.WriteLine("stop moving");
                         renderData.MovingToPosition = false;
                         phyComp.Body.LinearVelocity = Vector2.Zero;
                     }

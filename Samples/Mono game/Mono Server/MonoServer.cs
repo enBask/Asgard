@@ -84,14 +84,14 @@ namespace Mono_Server
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             var viewMap = Content.Load<TiledMap>("new_map");
-            _mapEntity = _gameServer.EntityManager.Create(1);
+            _mapEntity = ObjectMapper.CreateEntityById();
             var mapComponent = new MapComponent();
             mapComponent.Map = viewMap;
             mapComponent.Device = GraphicsDevice;
             mapComponent.Texture = Content.Load<Texture2D>("roguelikeSheet_transparent");
             _mapEntity.AddComponent(mapComponent);
 
-            var mapData = (MapData)ObjectMapper.Create(_mapEntity.UniqueId, typeof(MapData));
+            var mapData = (MapData)ObjectMapper.Create((uint)_mapEntity.UniqueId, typeof(MapData));
             mapData.Load(_gameServer, viewMap);
 
             _font = Content.Load<BitmapFont>("hack_font");

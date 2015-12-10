@@ -3,6 +3,7 @@ using Asgard.Core.System;
 using Farseer.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -12,185 +13,252 @@ namespace Asgard.Core.Network.Packets
 {
     [PacketAttribute((ushort)PacketTypes.DATA_OBJECT, NetDeliveryMethod.ReliableOrdered)]
     public class DataObjectPacket : Packet
-    {        
-        public long Id { get; set; }
+    {
         public uint SnapId { get; set; }
         public uint BaselineId { get; set; }
 
-        DataSerializationItem _dItem;
-        NetworkObject _owner;
-        NetworkObject _baseLine;
-        TypeInfo _ownerType;
+        public List<Tuple<uint, NetworkObject>> Objects { get; set; }
+        Dictionary<int, NetworkObject> _baselineState;
 
         public DataObjectPacket()
         {
+            Objects = new List<Tuple<uint, NetworkObject>>();
             SnapId = NetTime.SimTick;
         }
 
-        public void SetOwnerObject(NetworkObject obj)
+        public void SetBaseline(Dictionary<int, NetworkObject> state)
         {
-            _owner = obj;
-            _ownerType = obj.GetType().GetTypeInfo();
-            _dItem = DataLookupTable.Get(_ownerType);
-            if (_dItem.IsUnreliable)
-            {
-                Method = NetDeliveryMethod.UnreliableSequenced;
-            }
-        }
-
-        public void SetBaseline(NetworkObject obj)
-        {
-            _baseLine = obj;
+            _baselineState = state;
         }
 
         public override void Deserialize(Bitstream msg)
         {
-            ushort objTypeId = msg.ReadUInt16();
-            Id = msg.ReadInt64();
             SnapId = msg.ReadUInt32();
             BaselineId = msg.ReadUInt32();
 
+            ushort count = msg.ReadByte();
+            Dictionary<int, NetworkObject> state = new Dictionary<int, NetworkObject>();
 
-            object obj = ObjectMapper.Lookup(Id, objTypeId);
-            if (obj == null)
+            for (int i=0; i < count; ++i)
             {
-                obj = ObjectMapper.Create(Id, objTypeId);
-            }
-            SetOwnerObject(obj as NetworkObject);
+                ushort objTypeId = msg.ReadByte();
+                var entId = msg.ReadVariableUInt32();
 
-            if (_dItem == null)
-            {
-                return;
+                NetworkObject obj = ObjectMapper.Lookup(entId, objTypeId, true);
+                if (obj == null)
+                {
+                    obj = ObjectMapper.Create(entId, objTypeId);
+                }
+
+                Tuple<uint, Dictionary<int, NetworkObject>> baseline = null;
+                if (BaselineId != 0)
+                {
+                    baseline = ObjectMapper.GetBaseline();
+                    if (baseline != null)
+                    {
+                        if (baseline.Item1 != BaselineId)
+                        {
+                            ObjectMapper.SetBaseline(BaselineId);
+                            baseline = ObjectMapper.GetBaseline();
+                        }
+                    }
+                }
+                NetworkObject realObj = ObjectMapper.Lookup(entId, objTypeId, false);
+                var realHash = 0;
+                if (realObj != null)
+                    realHash = realObj.GetHashCode();
+
+                NetworkObject baselineObj = null;
+                if (baseline != null)
+                {
+                    baseline.Item2.TryGetValue(realHash, out baselineObj);
+                }
+
+
+                var ownerType = obj.GetType().GetTypeInfo();
+                var dItem = DataLookupTable.Get(ownerType);
+                ReadNetObject(dItem, msg, obj, baselineObj);
             }
 
-            ReadNetObject(_dItem, msg, _owner);
+            if (state.Count > 0)
+                ObjectMapper.AddDeltaState(SnapId, state);
         }
 
         public override void Serialize(Bitstream msg)
         {
-            if (_dItem == null)
-            {
-                return;
-            }
-
-            ushort objTypeId = ObjectMapper.LookupType(_ownerType);
-            msg.Write(objTypeId);
-            msg.Write(Id);
+          
             msg.Write(SnapId);
             msg.Write(BaselineId);
-            WriteNetObject(_dItem, msg, _owner);
+            msg.Write((byte)Objects.Count);
+            foreach(var obj in Objects)
+            {
+                var ownerType = obj.Item2.GetType().GetTypeInfo();
+                ushort objTypeId = ObjectMapper.LookupType(ownerType);
+                msg.Write((byte)objTypeId);
+                msg.WriteVariableUInt32(obj.Item1);
+
+                var dItem = DataLookupTable.Get(ownerType);
+
+                NetworkObject baseline = null;
+                if (_baselineState != null)
+                {
+                    _baselineState.TryGetValue(obj.Item2.GetHashCode(), out baseline);
+                }
+
+                WriteNetObject(dItem, msg, obj.Item2, baseline);
+            }
         }
 
-        private bool UseBaseline(DataSerializationProperty prop, NetworkObject owner)
+        private bool UseBaseline(DataSerializationProperty prop, NetworkObject owner, NetworkObject baseline)
         {
-            return false;
-            if (_baseLine == null) return false;
+            if (baseline == null) return false;
             switch (prop.Type)
             {
                 case DataTypes.BOOL:
-                {
-                    bool a = prop.Get<bool>(owner);
-                    bool b = prop.Get<bool>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.BYTE:
-                {
-                    sbyte a = prop.Get<sbyte>(owner);
-                    sbyte b = prop.Get<sbyte>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.DOUBLE:
-                {
-                    double a = prop.Get<double>(owner);
-                    double b = prop.Get<double>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.FLOAT:
-                {
-                    float a = prop.Get<float>(owner);
-                    float b = prop.Get<float>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.INT:
-                {
-                    int a = prop.Get<int>(owner);
-                    int b = prop.Get<int>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.LONG:
-                {
-                    long a = prop.Get<long>(owner);
-                    long b = prop.Get<long>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.SHORT:
-                {
-                    short a = prop.Get<short>(owner);
-                    short b = prop.Get<short>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.UBYTE:
-                {
-                    byte a = prop.Get<byte>(owner);
-                    byte b = prop.Get<byte>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.UINT:
-                {
-                    uint a = prop.Get<uint>(owner);
-                    uint b = prop.Get<uint>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.ULONG:
-                {
-                    ulong a = prop.Get<ulong>(owner);
-                    ulong b = prop.Get<ulong>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.USHORT:
-                {
-                    ushort a = prop.Get<ushort>(owner);
-                    ushort b = prop.Get<ushort>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.VECTOR2:
-                {
-                    Vector2 a = prop.Get<Vector2>(owner);
-                    Vector2 b = prop.Get<Vector2>(_baseLine);
-                    return a == b;
-                }
-                case DataTypes.NETPROP:
-                {
-                    var childProp = prop.ChildProperty;
-                    if (childProp != null)
                     {
-                        var o = prop.Get<NetworkObject>(owner);
-
-                        var baseline = _baseLine;
-                        var childBase = prop.Get<NetworkObject>(_baseLine);
-
-                        _baseLine = childBase;    
-                        bool bUse = true;                    
-                        foreach(var child_prop in childProp.Properties)
-                        {
-                            if (!UseBaseline(child_prop, o))
-                            {
-                                bUse = false;
-                                break;
-                            }
-                        }
-                        _baseLine = baseline;
-                        return bUse;
+                        bool a = prop.Get<bool>(owner);
+                        bool b = prop.Get<bool>(baseline);
+                        return a == b;
                     }
-
-                    return true;
-                }
+                case DataTypes.BYTE:
+                    {
+                        sbyte a = prop.Get<sbyte>(owner);
+                        sbyte b = prop.Get<sbyte>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.DOUBLE:
+                    {
+                        double a = prop.Get<double>(owner);
+                        double b = prop.Get<double>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.FLOAT:
+                    {
+                        float a = prop.Get<float>(owner);
+                        float b = prop.Get<float>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.INT:
+                    {
+                        int a = prop.Get<int>(owner);
+                        int b = prop.Get<int>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.LONG:
+                    {
+                        long a = prop.Get<long>(owner);
+                        long b = prop.Get<long>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.SHORT:
+                    {
+                        short a = prop.Get<short>(owner);
+                        short b = prop.Get<short>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.UBYTE:
+                    {
+                        byte a = prop.Get<byte>(owner);
+                        byte b = prop.Get<byte>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.UINT:
+                    {
+                        uint a = prop.Get<uint>(owner);
+                        uint b = prop.Get<uint>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.ULONG:
+                    {
+                        ulong a = prop.Get<ulong>(owner);
+                        ulong b = prop.Get<ulong>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.USHORT:
+                    {
+                        ushort a = prop.Get<ushort>(owner);
+                        ushort b = prop.Get<ushort>(baseline);
+                        return a == b;
+                    }
+                case DataTypes.VECTOR2:
+                    {
+                        Vector2 a = prop.Get<Vector2>(owner);
+                        Vector2 b = prop.Get<Vector2>(baseline);
+                        return a == b;
+                    }
             }
 
             return false;
         }
 
-        private void ReadNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner)
+        private void ApplyBaseline(DataSerializationProperty prop, NetworkObject owner, NetworkObject clone)
+        {
+            switch (prop.Type)
+            {
+                case DataTypes.BOOL:
+                    {
+                        bool b = prop.Get<bool>(clone);
+                        prop.Set(owner, b); break;
+                    }
+                case DataTypes.BYTE:
+                    {
+                        sbyte b = prop.Get<sbyte>(clone);
+                        prop.Set(owner, b); break;
+                    }
+                case DataTypes.DOUBLE:
+                    {
+                        double b = prop.Get<double>(clone);
+                        prop.Set(owner, b); break;
+                    }
+                case DataTypes.FLOAT:
+                    {
+                        float b = prop.Get<float>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.INT:
+                    {
+                        int b = prop.Get<int>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.LONG:
+                    {
+                        long b = prop.Get<long>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.SHORT:
+                    {
+                        short b = prop.Get<short>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.UBYTE:
+                    {
+                        byte b = prop.Get<byte>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.UINT:
+                    {
+                        uint b = prop.Get<uint>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.ULONG:
+                    {
+                        ulong b = prop.Get<ulong>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.USHORT:
+                    {
+                        ushort b = prop.Get<ushort>(clone);
+                         prop.Set(owner, b); break;
+                    }
+                case DataTypes.VECTOR2:
+                    {
+                        Vector2 b = prop.Get<Vector2>(clone);
+                         prop.Set(owner, b); break;
+                    }
+            }
+        }
+
+        private void ReadNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner, NetworkObject baseline=null)
         {
             if (owner is DefinitionNetworkObject)
             {
@@ -207,6 +275,14 @@ namespace Asgard.Core.Network.Packets
                 var useBaseline = msg.ReadBool();
                 if (useBaseline)
                 {
+                    if (baseline != null)
+                    {
+                        ApplyBaseline(prop, owner, baseline);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Can't find baseline!");
+                    }
                     continue;
                 }
 
@@ -219,13 +295,13 @@ namespace Asgard.Core.Network.Packets
                         prop.Set(owner, msg.ReadByte());
                         break;
                     case DataTypes.UINT:
-                        prop.Set(owner, msg.ReadUInt32());
+                        prop.Set(owner, msg.ReadVariableUInt32());
                         break;
                     case DataTypes.BYTE:
                         prop.Set(owner, msg.ReadSByte());
                         break;
                     case DataTypes.INT:
-                        prop.Set(owner, msg.ReadInt32());
+                        prop.Set(owner, msg.ReadVariableInt32());
                         break;
                     case DataTypes.ULONG:
                         prop.Set(owner, msg.ReadUInt64());
@@ -252,7 +328,14 @@ namespace Asgard.Core.Network.Packets
                             var o = (NetworkObject)prop.CreateChildProperty();
                             if (o != null)
                             {
-                                ReadNetObject(childProp, msg, o);
+                                var baselineSet = ObjectMapper.GetBaseline();
+                                NetworkObject childBaseline = null;
+                                if (baselineSet != null)
+                                {
+                                    baselineSet.Item2.TryGetValue(o.GetHashCode(), out childBaseline);
+                                }
+
+                                ReadNetObject(childProp, msg, o, childBaseline);
                                 prop.Set(owner, o);
                             }
                         }
@@ -261,7 +344,7 @@ namespace Asgard.Core.Network.Packets
             }
         }
 
-        private void WriteNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner)
+        private void WriteNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner, NetworkObject baseline = null)
         {
             if (owner is DefinitionNetworkObject)
             {
@@ -277,7 +360,7 @@ namespace Asgard.Core.Network.Packets
             }
             foreach (var prop in item.Properties)
             {
-                if (UseBaseline(prop, owner))
+                if (UseBaseline(prop, owner, baseline))
                 {
                     msg.Write(true);
                     continue;
@@ -290,19 +373,20 @@ namespace Asgard.Core.Network.Packets
                 switch (prop.Type)
                 {
                     case DataTypes.BOOL:
-                        msg.Write(prop.Get<bool>(owner));
+                        var b = prop.Get<bool>(owner);
+                        msg.Write(b);
                         break;
                     case DataTypes.UBYTE:
                         msg.Write(prop.Get<byte>(owner));
                         break;
                     case DataTypes.UINT:
-                        msg.Write(prop.Get<uint>(owner));
+                        msg.WriteVariableUInt32(prop.Get<uint>(owner));
                         break;
                     case DataTypes.BYTE:
                         msg.Write(prop.Get<sbyte>(owner));
                         break;
                     case DataTypes.INT:
-                        msg.Write(prop.Get<int>(owner));
+                        msg.WriteVariableInt32(prop.Get<int>(owner));
                         break;
                     case DataTypes.ULONG:
                         msg.Write(prop.Get<ulong>(owner));
@@ -328,14 +412,14 @@ namespace Asgard.Core.Network.Packets
                         {
                             var o = prop.Get<NetworkObject>(owner);
 
-                            var baseline = _baseLine;
-                            if (_baseLine != null)
+                            var baselinebackup = baseline;
+                            if (baseline != null)
                             {
-                                var childBase = prop.Get<NetworkObject>(_baseLine);
-                                _baseLine = childBase;
+                                var childBase = prop.Get<NetworkObject>(baseline);
+                                baseline = childBase;
                             }
-                            WriteNetObject(childProp, msg, o);
-                            _baseLine = baseline;
+                            WriteNetObject(childProp, msg, o, baseline);
+                            baseline = baselinebackup;
                         }
                         break;
                 }

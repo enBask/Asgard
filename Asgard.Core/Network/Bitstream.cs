@@ -178,27 +178,32 @@ namespace Asgard.Core.Network
 
         public Vector2 ReadVector2()
         {
-            var hasData = _buffer.ReadBoolean();
-            if (hasData)
+            var hasXData = _buffer.ReadBoolean();
+            var hasYData = _buffer.ReadBoolean();
+            Vector2 v = Vector2.Zero;
+            if (hasXData)
             {
-                Vector2 v;
                 v.X = _buffer.ReadFloat();
-                v.Y = _buffer.ReadFloat();
-                return v;
             }
-            else
+            if (hasYData)
             {
-                return Vector2.Zero;
+                v.Y = _buffer.ReadFloat();
             }
+            return v;
         }
 
         public void Write(Vector2 data)
         {
-            var hasData = (data != Vector2.Zero);
-            _buffer.Write(hasData);
-            if (hasData)
+            var hasXData = (data.X > 0.0000001f);
+            var hasYData = (data.Y > 0.0000001f);
+            _buffer.Write(hasXData);
+            _buffer.Write(hasYData);
+            if (hasXData)
             {
                 _buffer.Write(data.X);
+            }
+            if (hasYData)
+            {
                 _buffer.Write(data.Y);
             }
         }

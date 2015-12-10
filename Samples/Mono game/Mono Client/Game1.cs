@@ -11,6 +11,7 @@ using Asgard.Core.Network.Packets;
 using Asgard.EntitySystems.Components;
 using Asgard.Core.Network;
 using MonoGame.Extended.BitmapFonts;
+using Asgard.Core.System;
 
 namespace Mono_Client
 {
@@ -68,7 +69,7 @@ namespace Mono_Client
 
         private void BuildWorld()
         {
-            _mapEntity = _gameClient.EntityManager.Create(1);
+            _mapEntity = ObjectMapper.CreateEntityById();
             var mapComponent = new MapComponent();
             mapComponent.Device = GraphicsDevice;
             mapComponent.Texture = Content.Load<Texture2D>("roguelikeSheet_transparent");

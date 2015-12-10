@@ -66,7 +66,7 @@ namespace Asgard.Core.Physics
             if (remoteSync)
             {
                 ObjectMapper.Create(
-                    entity.UniqueId, typeof(NetPhysicsObject));
+                    (uint)entity.UniqueId, typeof(NetPhysicsObject));
             }
 
             return component;

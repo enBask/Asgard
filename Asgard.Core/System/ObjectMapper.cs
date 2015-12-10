@@ -4,6 +4,7 @@ using Artemis.Manager;
 using Asgard.Core.Network.Data;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -25,6 +26,9 @@ namespace Asgard.Core.System
 
         static List<Tuple<Entity, NetworkObject>> _snapshotCache = new List<Tuple<Entity, NetworkObject>>();
         static bool _inSnapshot = false;
+
+        static Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaStates =
+            new Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>>();
 
         internal static void Init(AsgardBase instance)
         {
@@ -81,7 +85,7 @@ namespace Asgard.Core.System
             }
         }
 
-        public static NetworkObject Lookup(long id, ushort typeId)
+        public static NetworkObject Lookup(long id, ushort typeId, bool snapshot=true)
         {
             var entity = _manager.GetEntityByUniqueId(id);
             if (entity == null) return null;
@@ -91,25 +95,36 @@ namespace Asgard.Core.System
             var compType = ComponentTypeManager.GetTypeFor(type);
             var comp = entity.GetComponent(compType) as NetworkObject;
 
-            if (_inSnapshot && comp != null)
+            if (snapshot)
             {
-                comp = Activator.CreateInstance(type) as NetworkObject;
-                comp.IsUpdated = true;
-                _snapshotCache.Add( new Tuple<Entity, NetworkObject>(entity, comp));
+                List<NetworkObject> objList;
+                if (_netObjectCache.TryGetValue(entity, out objList))
+                {
+                    objList.Add(comp);
+                }
+                else
+                {
+                    objList = new List<NetworkObject>();
+                    objList.Add(comp);
+                    _netObjectCache[entity] = objList;
+                }
+
+                _snapshotCache.Add(new Tuple<Entity, NetworkObject>(entity, comp));
             }
 
             return comp;
         }
 
-        public static NetworkObject Create(long id, ushort typeId)
+        public static NetworkObject Create(uint id, ushort typeId)
         {
             var compType = LookupType(typeId);
             return Create(id, compType);            
         }
 
-        public static NetworkObject Create(long id, Type type)
+        public static NetworkObject Create(uint id, Type type)
         {
             var entity = CreateEntity(id);
+
             var comp = Activator.CreateInstance(type) as NetworkObject;
 
             List<NetworkObject> objList;
@@ -126,12 +141,16 @@ namespace Asgard.Core.System
 
             if (_inSnapshot && comp != null)
             {
-                comp = Activator.CreateInstance(type) as NetworkObject;
                 _snapshotCache.Add(new Tuple<Entity, NetworkObject>(entity, comp));
             }
             else
             {
-                entity.AddComponent(comp as IComponent);
+                var compType = ComponentTypeManager.GetTypeFor(type);
+                if (entity.GetComponent(compType) == null)
+                {
+                    entity.AddComponent(comp as IComponent);
+                }
+
             }
 
             return comp;
@@ -162,27 +181,36 @@ namespace Asgard.Core.System
             }
         }
 
-        public static Entity CreateEntity(long id = 0)
+        public static Entity CreateEntity(uint id = 0)
         {
-            Entity ent = null;
-            if (id != 0)
-            {
-                ent = _manager.GetEntityByUniqueId(id);
-                if (ent == null)
-                {
-                    ent = _manager.Create(id);
-                    _netObjectCache[ent] = new List<NetworkObject>();
-                }
-            }
-
+            Entity ent = _manager.GetEntityByUniqueId(id);
             if (ent == null)
             {
-                ent = _manager.Create();
+                ent = CreateEntityById(id);
                 _netObjectCache[ent] = new List<NetworkObject>();
             }
 
-
             return ent;
+        }
+
+        static object _lock_obj = new object();
+        static uint _master_entity_id = 0;
+        public static Entity CreateEntityById(uint id=0)
+        {
+            if (id == 0)
+            {
+                id = ++_master_entity_id;
+                return _manager.Create(id);
+            }
+            else
+            {
+                var e = _manager.GetEntityByUniqueId(id);
+                if (e == null)
+                {
+                    e = _manager.Create(id);
+                }
+                return e;
+            }
         }
 
         public static void DestoryEntity(Entity ent)
@@ -218,5 +246,37 @@ namespace Asgard.Core.System
             _inSnapshot = false;
             return tmpList;
         }
+
+
+        internal static void AddDeltaState(uint tickId, Dictionary<int,NetworkObject> state)
+        {
+            var tuple = new Tuple<uint, Dictionary<int, NetworkObject>>(tickId, state);
+            _deltaStates.AddToTail(tuple);
+        }
+
+        internal static void SetBaseline(uint tickid)
+        {
+            foreach(var node in _deltaStates)
+            {
+                if (node.Value.Item1 == tickid)
+                {
+                    _deltaStates.TruncateTo(node);
+                }
+            }
+        }
+
+        internal static Tuple<uint, Dictionary<int, NetworkObject>> GetBaseline()
+        {
+            if (_deltaStates.First == null) return null;
+            return _deltaStates.First.Value;
+        }
+
+        internal static uint GetLastSimId()
+        {
+            if (_deltaStates.Last == null) return 0;
+
+            return _deltaStates.Last.Value.Item1;
+        }
+
     }
 }

@@ -34,9 +34,6 @@ namespace Asgard.Client
         BifrostClient _bifrost = null;
         NetConfig _netConfig;
 
-        double _physics_accum = 0;
-        double _physics_InvtickRate = 1f / 60f;
-
         public AsgardClient() : base()
         {
             _netConfig = Config.Get<NetConfig>("network");
@@ -70,6 +67,14 @@ namespace Asgard.Client
             if (netObjects.Count > 0)
             {
                 _jitterBuffer.Add(netObjects);
+
+                var simid = ObjectMapper.GetLastSimId();
+                if (simid != 0)
+                {
+                    AckStatePacket p = new AckStatePacket();
+                    p.SimId = simid;
+                    _bifrost.Send(p, 3);
+                }
             }
         }
 
@@ -209,6 +214,7 @@ namespace Asgard.Client
                     else
                     {
                         var ditem = DataLookupTable.Get(objType.GetTypeInfo());
+
                         ditem.Merge((NetworkObject)objA, objB);
                     }
                 }

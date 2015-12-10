@@ -34,7 +34,7 @@ namespace Asgard.Core.Network.Data
 
     internal class DataSerializationProperty
     {
-        private string propName;
+        internal string propName;
         private Type resolvedType;
         private DataSerializationItem _childProperty;
 
@@ -141,14 +141,14 @@ namespace Asgard.Core.Network.Data
             }
             else
             {
-                if (prop == null)
+                if (prop != null)
                 {
-                    wrapped[propName] = prop = new NetworkProperty<T>();
+                    return (prop as NetworkProperty<T>).Value;
                 }
-                return (prop as NetworkProperty<T>).Value;
+                return default(T);
             }
 
-           
+
         }
 
         public object GetUnknown(NetworkObject owner)
@@ -162,8 +162,7 @@ namespace Asgard.Core.Network.Data
             t = t.MakeGenericType(resolvedType);
             if (prop == null)
             {
-                prop = Activator.CreateInstance(t);
-                wrapped[propName] = prop;
+                return null;
             }
 
             var subWrap = ObjectAccessor.Create(prop);
@@ -193,9 +192,15 @@ namespace Asgard.Core.Network.Data
             {
                 if (prop == null)
                 {
-                    wrapped[propName] = prop = new NetworkProperty<T>();
+                    prop = new NetworkProperty<T>();
+                    (prop as NetworkProperty<T>).Value = value;
+                    wrapped[propName] = prop;
                 }
-                (prop as NetworkProperty<T>).Value = value;
+                else
+                {
+                    (prop as NetworkProperty<T>).Value = value;
+                }
+                
             }
 
             
@@ -245,6 +250,7 @@ namespace Asgard.Core.Network.Data
         public void SetUnknown(NetworkObject owner, object value)
         {
             if (owner == null) return;
+            if (value == null) return;
             var wrapped = ObjectAccessor.Create(owner);
             var prop = wrapped[propName];
 
@@ -253,11 +259,17 @@ namespace Asgard.Core.Network.Data
             if (prop == null)
             {
                 prop = Activator.CreateInstance(t);
+                var subWrap = ObjectAccessor.Create(prop);
+                subWrap["Value"] = value;
                 wrapped[propName] = prop;
             }
+            else
+            {
+                var subWrap = ObjectAccessor.Create(prop);
+                subWrap["Value"] = value;
 
-            var subWrap = ObjectAccessor.Create(prop);
-            subWrap["Value"] = value;
+            }
+
         }
 
         internal void UnDefineObject(NetworkObject owner, Entity entity)

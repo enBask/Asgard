@@ -16,7 +16,19 @@ namespace Asgard.Core.Physics
         public NetworkProperty<Vector2> Position { get; set; }
         public NetworkProperty<Vector2> LinearVelocity { get; set; }
         public NetworkProperty<uint> SimTick { get; set; }
-        public NetworkProperty<bool> PlayerControlled { get; set; }
+
+        NetworkProperty<bool> _pControlled;
+        public NetworkProperty<bool> PlayerControlled
+        {
+            get
+            {
+                return _pControlled;
+            }
+            set
+            {
+                _pControlled = value;
+            }
+        }
 
         public Vector2 position_error { get; set; }
     }

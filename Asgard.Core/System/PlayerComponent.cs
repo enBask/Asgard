@@ -8,6 +8,7 @@ using Farseer.Framework;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Asgard.EntitySystems.Components
 {
@@ -23,7 +24,14 @@ namespace Asgard.EntitySystems.Components
         public float LerpStart { get; set; }
         public float LerpEnd { get; set; }
 
-        private Dictionary<NetworkObject, long> _knownObjects;
+        private Dictionary<NetworkObject, uint> _knownObjects;
+
+
+        /// <summary>
+        /// uint = SimTick
+        /// int = hashcode of the real NetworkObject
+        /// NetworkObject = clone of the NetObject at Simtick time
+        /// </summary>
         private Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaBuffer;
             
 
@@ -31,7 +39,7 @@ namespace Asgard.EntitySystems.Components
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
-            _knownObjects = new Dictionary<NetworkObject, long>();
+            _knownObjects = new Dictionary<NetworkObject, uint>();
             _deltaBuffer = 
                 new Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>>();
         }
@@ -48,7 +56,7 @@ namespace Asgard.EntitySystems.Components
         }
 
         #region object tracking for remote create/delete
-        internal void AddKnownObject(NetworkObject obj, long eId)
+        internal void AddKnownObject(NetworkObject obj, uint eId)
         {
             if (!IsObjectKnown(obj))
             {
@@ -61,7 +69,7 @@ namespace Asgard.EntitySystems.Components
             return _knownObjects.ContainsKey(obj);
         }
 
-        internal List<Tuple<NetworkObject,long>> FindDeletedObjects(List<NetworkObject> fullList)
+        internal List<Tuple<NetworkObject, uint>> FindDeletedObjects(List<NetworkObject> fullList)
         {
             //get the known object list as a simple collection
             var objList = _knownObjects.Keys.AsEnumerable();
@@ -71,7 +79,7 @@ namespace Asgard.EntitySystems.Components
             var retList = missingItems.Select(n =>
             {
                 var id = _knownObjects[n];
-                return new Tuple<NetworkObject, long>(n, id);
+                return new Tuple<NetworkObject, uint>(n, id);
             });
 
             return retList.ToList();
@@ -84,6 +92,7 @@ namespace Asgard.EntitySystems.Components
         }
         #endregion
 
+        
         internal void AddDeltaState(Dictionary<int, NetworkObject> syncState)
         {
             var deltaState = new Tuple<uint, Dictionary<int, NetworkObject>>
@@ -94,15 +103,19 @@ namespace Asgard.EntitySystems.Components
             _deltaBuffer.AddToTail(deltaState);
         }
 
+        bool useDeltaState = false;
         internal Tuple<uint, Dictionary<int, NetworkObject>> GetDeltaBaseline()
         {
+            if (!useDeltaState) return null;
+
             if (_deltaBuffer.First == null) return null;
             return _deltaBuffer.First.Value;
         }
 
         internal void AckDeltaBaseline(uint simTick)
         {
-            foreach(var node in _deltaBuffer)
+            useDeltaState = true;
+            foreach (var node in _deltaBuffer)
             {
                 if (node.Value.Item1 == simTick)
                 {
