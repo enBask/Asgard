@@ -104,7 +104,7 @@ namespace Asgard.Core.Physics
             if (_accum >= _invTickRate)
             {
                 int ticks = 0;
-                while (_accum >= _invTickRate && ticks < 3)
+                while (_accum >= _invTickRate && ticks < 10)
                 {
                     _accum -= _invTickRate;
                     Step(_invTickRate);

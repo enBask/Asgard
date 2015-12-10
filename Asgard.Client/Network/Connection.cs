@@ -103,9 +103,9 @@ namespace Asgard
 //             config.UseMessageRecycling = true;
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
 
-            config.SimulatedLoss = 0.01f;
-            config.SimulatedMinimumLatency = 0.2f;
-            config.SimulatedRandomLatency = 0.05f;
+//             config.SimulatedLoss = 0.01f;
+//             config.SimulatedMinimumLatency = 0.2f;
+//             config.SimulatedRandomLatency = 0.05f;
 
 
             IPAddress address = NetUtility.Resolve(host);
