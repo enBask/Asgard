@@ -33,7 +33,7 @@
   <ItemGroup>
     <Reference Include="artemis, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\artemis_CSharp\Artemis_XNA_INDEPENDENT\bin\Debug\PC\artemis.dll</HintPath>
+      <HintPath>..\..\..\Asgard.Server\imports\artemis.dll</HintPath>
     </Reference>
     <Reference Include="FarseerPhysics, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
