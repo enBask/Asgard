@@ -32,16 +32,16 @@ namespace Asgard.EntitySystems.Components
         /// int = hashcode of the real NetworkObject
         /// NetworkObject = clone of the NetObject at Simtick time
         /// </summary>
-//        private Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaBuffer;
-        private Dictionary<int, Queue<Tuple<uint, NetworkObject>>> _deltaBuffer;
+        private Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaBuffer;
+            
 
         public PlayerComponent(NetNode networkNode)
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
             _knownObjects = new Dictionary<NetworkObject, uint>();
-            _deltaBuffer =
-                new Dictionary<int, Queue<Tuple<uint, NetworkObject>>>();
+            _deltaBuffer = 
+                new Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>>();
         }
 
         public PlayerStateData GetNextState()
@@ -104,22 +104,12 @@ namespace Asgard.EntitySystems.Components
         }
 
         bool useDeltaState = false;
-
         internal Tuple<uint, Dictionary<int, NetworkObject>> GetDeltaBaseline()
         {
             if (!useDeltaState) return null;
 
             if (_deltaBuffer.First == null) return null;
             return _deltaBuffer.First.Value;
-        }
-
-        internal Tuple<uint, NetworkObject> FindBaseline(NetworkObject baseObj)
-        {
-            Tuple<uint, Queue<NetworkObject>> objectList;
-            if (_deltaBuffer.TryGetValue(baseObj.GetHashCode(), out objectList))
-            {
-
-            }
         }
 
         internal void AckDeltaBaseline(uint simTick)
