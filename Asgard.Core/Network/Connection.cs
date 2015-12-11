@@ -22,7 +22,7 @@ namespace Asgard.Core.Network
 
         }
 
-        public virtual NetPeer Peer {get;}
+        public virtual NetPeer Peer {get; private set;}
 
 
         public double NetTime
