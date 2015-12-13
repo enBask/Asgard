@@ -26,22 +26,14 @@ namespace Asgard.EntitySystems.Components
 
         private Dictionary<NetworkObject, uint> _knownObjects;
 
-
-        /// <summary>
-        /// uint = SimTick
-        /// int = hashcode of the real NetworkObject
-        /// NetworkObject = clone of the NetObject at Simtick time
-        /// </summary>
-//        private Core.Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaBuffer;
-        private Dictionary<int, Queue<Tuple<uint, NetworkObject>>> _deltaBuffer;
+        private Dictionary<int, DeltaList> _deltaBuffer;
 
         public PlayerComponent(NetNode networkNode)
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
             _knownObjects = new Dictionary<NetworkObject, uint>();
-            _deltaBuffer =
-                new Dictionary<int, Queue<Tuple<uint, NetworkObject>>>();
+            _deltaBuffer = new Dictionary<int, DeltaList>();
         }
 
         public PlayerStateData GetNextState()
@@ -93,47 +85,55 @@ namespace Asgard.EntitySystems.Components
         #endregion
 
         
-        internal void AddDeltaState(Dictionary<int, NetworkObject> syncState)
+        internal void AddDeltaState(List<DeltaLookup> syncList)
         {
-            var deltaState = new Tuple<uint, Dictionary<int, NetworkObject>>
-                (
-                NetTime.SimTick,
-                syncState
-                );
-            _deltaBuffer.AddToTail(deltaState);
-        }
-
-        bool useDeltaState = false;
-
-        internal Tuple<uint, Dictionary<int, NetworkObject>> GetDeltaBaseline()
-        {
-            if (!useDeltaState) return null;
-
-            if (_deltaBuffer.First == null) return null;
-            return _deltaBuffer.First.Value;
-        }
-
-        internal Tuple<uint, NetworkObject> FindBaseline(NetworkObject baseObj)
-        {
-            Tuple<uint, Queue<NetworkObject>> objectList;
-            if (_deltaBuffer.TryGetValue(baseObj.GetHashCode(), out objectList))
+            foreach (var lookup in syncList)
             {
+                DeltaList objList;
+                if (!_deltaBuffer.TryGetValue(lookup.Lookup, out objList))
+                {
+                    _deltaBuffer[lookup.Lookup] = objList = 
+                        new DeltaList();
+                }
 
+                objList.Objects.AddToTail(new DeltaWrapper()
+                    {
+                        Lookup = NetTime.SimTick,
+                        Object = lookup.Object
+                    });
             }
+
+        }
+
+        internal DeltaWrapper FindBaseline(NetworkObject baseObj)
+        {
+
+            DeltaList objList;
+            if (_deltaBuffer.TryGetValue(baseObj.GetHashCode(), out objList))
+            {
+                if (!objList.HasAcked) return null;
+
+                var head = objList.Objects.First;
+                if (head != null)
+                    return head.Value;
+            }
+            return null;
         }
 
         internal void AckDeltaBaseline(uint simTick)
         {
-            useDeltaState = true;
-            foreach (var node in _deltaBuffer)
+            foreach(var list in _deltaBuffer.Values)
             {
-                if (node.Value.Item1 == simTick)
+                foreach(var node in list.Objects)
                 {
-                    _deltaBuffer.TruncateTo(node);
-                    return;
+                    if (node.Value.Lookup == simTick)
+                    {
+                        list.HasAcked = true;
+                        list.Objects.TruncateTo(node);
+                        break;
+                    }
                 }
             }
         }
-
     }
 }
