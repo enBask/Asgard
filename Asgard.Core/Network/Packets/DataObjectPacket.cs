@@ -75,8 +75,6 @@ namespace Asgard.Core.Network.Packets
 
                 if (BaselineId != 0 && realHash != 0)
                     addDeltaCount++;
-
-//                Trace.WriteLine("Dez=> " + realHash + " " + addDelta + " " + BaselineId + " " + bOffset);
             }
 
             if (addDeltaCount == count)

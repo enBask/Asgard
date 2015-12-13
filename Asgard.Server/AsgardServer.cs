@@ -16,6 +16,7 @@ using Asgard.Core.Network.Data;
 using Asgard.Core.Physics;
 using Asgard.EntitySystems.Components;
 using Asgard.EntitySystems;
+using FarseerPhysics.Common;
 
 namespace Asgard
 {

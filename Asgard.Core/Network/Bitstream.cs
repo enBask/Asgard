@@ -180,22 +180,22 @@ namespace Asgard.Core.Network
         {
             var hasXData = _buffer.ReadBoolean();
             var hasYData = _buffer.ReadBoolean();
-            Vector2 v = Vector2.Zero;
+            float x = 0f, y=0f;
             if (hasXData)
             {
-                v.X = _buffer.ReadFloat();
+                x = _buffer.ReadFloat();
             }
             if (hasYData)
             {
-                v.Y = _buffer.ReadFloat();
+                y = _buffer.ReadFloat();
             }
-            return v;
+            return new Vector2(x,y);
         }
 
         public void Write(Vector2 data)
         {
-            var hasXData = (data.X > 0.0000001f);
-            var hasYData = (data.Y > 0.0000001f);
+            bool hasXData = (Math.Abs(data.X) > 0.0000001f);
+            bool hasYData = (Math.Abs(data.Y) > 0.0000001f);
             _buffer.Write(hasXData);
             _buffer.Write(hasYData);
             if (hasXData)
