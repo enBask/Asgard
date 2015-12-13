@@ -97,6 +97,32 @@ namespace Asgard.Client
             base.BeforePhysics(delta);
             MergeJitterBuffer();
 
+            var ents = EntityManager.GetEntities(Aspect.One(typeof(NetPhysicsObject)));
+            foreach (var ent in ents)
+            {
+                var dObj = ent.GetComponent<NetPhysicsObject>();
+                float X = dObj.position_error.X;
+                float Y = dObj.position_error.Y;
+
+                if (Math.Abs(dObj.position_error.X) >= 0.00001f)
+                    if (Math.Abs(dObj.position_error.X) >= 1f)
+                        X *= 0.975f;
+                    else
+                        X *= 0.975f;
+                else
+                    X = 0;
+
+                if (Math.Abs(dObj.position_error.Y) >= 0.00001f)
+                    if (Math.Abs(dObj.position_error.Y) >= 1f)
+                        Y *= 0.975f;
+                    else
+                        Y *= 0.975f;
+                else
+                    Y = 0;
+
+                dObj.position_error = new Farseer.Framework.Vector2(X, Y);
+            }
+
         }
         protected override void AfterPhysics(float delta)
         {
@@ -127,27 +153,6 @@ namespace Asgard.Client
 
                     dObj.IsUpdated = false;
                 }
-
-                float X = dObj.position_error.X;
-                float Y = dObj.position_error.Y;
-
-                if (Math.Abs(dObj.position_error.X) >= 0.00001f)
-                    if (Math.Abs(dObj.position_error.X) >= 1f)
-                        X *= 0.975f;
-                    else
-                        X *= 0.975f;
-                else
-                    X = 0;
-
-                if (Math.Abs(dObj.position_error.Y) >= 0.00001f)
-                    if (Math.Abs(dObj.position_error.Y) >= 1f)
-                        Y *= 0.975f;
-                    else
-                        Y *= 0.975f;
-                else
-                    Y = 0;
-
-                dObj.position_error = new Farseer.Framework.Vector2(X, Y);
             }
            
         }

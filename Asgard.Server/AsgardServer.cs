@@ -16,6 +16,7 @@ using Asgard.Core.Network.Data;
 using Asgard.Core.Physics;
 using Asgard.EntitySystems.Components;
 using Asgard.EntitySystems;
+using FarseerPhysics.Common;
 
 namespace Asgard
 {
@@ -136,19 +137,17 @@ namespace Asgard
             {
                 var playerComp = player.GetComponent<PlayerComponent>();
 
-                var baselineState = playerComp.GetDeltaBaseline();
-                var usebaseLine = (baselineState != null && baselineState.Item1 != 0);
-                Dictionary<int, NetworkObject> deltaState =
-                   new Dictionary<int, NetworkObject>();
+                List<DeltaLookup> deltaState = new List<DeltaLookup>();
 
 
                 var node = playerComp.NetworkNode;
                 if (node == null) continue;
 
                 List<NetworkObject> fullProcList = new List<NetworkObject>();
-                List<Tuple<uint, NetworkObject>> _stateSendList = new List<Tuple<uint, NetworkObject>>();
-                List<Tuple<uint, NetworkObject>> _defSendList = new List<Tuple<uint, NetworkObject>>();
-                Dictionary<int, NetworkObject> packetBaseState = new Dictionary<int, NetworkObject>();
+                List<DeltaWrapper> _stateSendList = new List<DeltaWrapper>();
+                List<DeltaWrapper> _defSendList = new List<DeltaWrapper>();
+                List<DeltaLookup> deltaLookups = new List<DeltaLookup>();
+                Dictionary<int, DeltaWrapper> packetBaseState = new Dictionary<int, DeltaWrapper>();
 
                 foreach (Entity nobj in ObjectMapper.GetEntityCache())
                 {
@@ -187,15 +186,21 @@ namespace Asgard
                             }
                         }
 
-                        NetworkObject baseClone = null;
-                        if (baselineState != null)
+                        var baseline = playerComp.FindBaseline(obj);
+                        
+                        deltaState.Add(new DeltaLookup()
                         {
-                            baselineState.Item2.TryGetValue(obj.GetHashCode(), out baseClone);
-                        }
-                        deltaState.Add(obj.GetHashCode(), clone);
-                        packetBaseState.Add(clone.GetHashCode(), baseClone);
+                            Lookup = obj.GetHashCode(), 
+                            Object = clone
+                        });
 
-                        _stateSendList.Add(new Tuple<uint, NetworkObject>((uint)nobj.UniqueId, clone));
+                        packetBaseState.Add(clone.GetHashCode(), baseline);
+
+                        _stateSendList.Add(new DeltaWrapper()
+                            {
+                                Lookup = (uint)nobj.UniqueId, 
+                                Object = clone
+                            });
                     }
 
                   
@@ -209,7 +214,11 @@ namespace Asgard
                         if (!playerComp.IsObjectKnown(obj))
                         {
                             playerComp.AddKnownObject(obj, (uint)nobj.UniqueId);
-                            _defSendList.Add(new Tuple<uint, NetworkObject>((uint)nobj.UniqueId, obj));
+                            _defSendList.Add(new DeltaWrapper()
+                                {
+                                    Lookup = (uint)nobj.UniqueId, 
+                                    Object = obj
+                                });
                         }
                     }
                     #endregion
@@ -220,11 +229,8 @@ namespace Asgard
                     var packet = new DataObjectPacket();
                     packet.Objects = _stateSendList;
                     packet.Method = NetDeliveryMethod.UnreliableSequenced;
-                    if (usebaseLine)
-                    {
-                        packet.BaselineId = baselineState.Item1;
-                        packet.SetBaseline(packetBaseState);
-                    }
+                    packet.BaselineId = NetTime.SimTick;
+                    packet.SetBaseline(packetBaseState);
                     _bifrost.Send(packet, node);
                 }
 
@@ -251,7 +257,11 @@ namespace Asgard
                     delObj.Destory = true;
                     playerComp.RemoveKnownObject(delObj);
 
-                    _defSendList.Add(new Tuple<uint, NetworkObject>(nobjId, delObj));
+                    _defSendList.Add(new DeltaWrapper()
+                    {
+                        Lookup = nobjId,
+                        Object = delObj
+                    });
                     if (!marked)
                         delObj.Destory = false;
                 }

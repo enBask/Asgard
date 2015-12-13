@@ -68,6 +68,7 @@
     <Compile Include="Collections\InerpolationBuffer.cs" />
     <Compile Include="Collections\JitterBuffer.cs" />
     <Compile Include="Collections\LinkedList.cs" />
+    <Compile Include="Network\Data\DeltaWrapper.cs" />
     <Compile Include="Network\Packets\AckStatePacket.cs" />
     <Compile Include="Physics\BodyDefinition.cs" />
     <Compile Include="Physics\Midgard.cs" />

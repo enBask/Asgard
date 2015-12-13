@@ -83,8 +83,8 @@ namespace Shared
             PolygonShape shape = new PolygonShape(rectangleVertices, 10000f);
             var fix = comp.Body.CreateFixture(shape);
             comp.Body.FixedRotation = true;
-            comp.Body.Mass = 1000000f;
-            comp.Body.Restitution = 0f;
+            comp.Body.Mass = 1000f;
+            comp.Body.Restitution = 1f;
             comp.Body.CollisionCategories = FarseerPhysics.Dynamics.Category.Cat2;
             comp.Body.CollidesWith = FarseerPhysics.Dynamics.Category.Cat1;
         }
@@ -132,6 +132,7 @@ namespace Shared
                 if (dataObj == null) return;
                 _sprite.Position = new Vector2(phyComp.Body.Position.X + dataObj.position_error.X ,
                     phyComp.Body.Position.Y + dataObj.position_error.Y);
+
             }
 
             _sprite.Position *= _worldSize;

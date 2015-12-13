@@ -94,6 +94,7 @@ namespace Shared
                             (viewMap.TileHeight * _worldfactor) - 0.01f,
                             1.0f);
 
+                        body.Restitution = 1f;
                         body.Position = new Vector2(
                             centerPoint.X * _worldfactor,
                             centerPoint.Y * _worldfactor);

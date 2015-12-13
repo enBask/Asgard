@@ -17,16 +17,16 @@ namespace Asgard.Core.Network.Packets
         public uint SnapId { get; set; }
         public uint BaselineId { get; set; }
 
-        public List<Tuple<uint, NetworkObject>> Objects { get; set; }
-        Dictionary<int, NetworkObject> _baselineState;
+        public List<DeltaWrapper> Objects { get; set; }
+        Dictionary<int, DeltaWrapper> _baselineState;
 
         public DataObjectPacket()
         {
-            Objects = new List<Tuple<uint, NetworkObject>>();
+            Objects = new List<DeltaWrapper>();
             SnapId = NetTime.SimTick;
         }
 
-        public void SetBaseline(Dictionary<int, NetworkObject> state)
+        public void SetBaseline(Dictionary<int, DeltaWrapper> state)
         {
             _baselineState = state;
         }
@@ -38,7 +38,7 @@ namespace Asgard.Core.Network.Packets
 
             ushort count = msg.ReadByte();
             Dictionary<int, NetworkObject> state = new Dictionary<int, NetworkObject>();
-
+            int addDeltaCount = 0;
             for (int i=0; i < count; ++i)
             {
                 ushort objTypeId = msg.ReadByte();
@@ -50,38 +50,35 @@ namespace Asgard.Core.Network.Packets
                     obj = ObjectMapper.Create(entId, objTypeId);
                 }
 
-                Tuple<uint, Dictionary<int, NetworkObject>> baseline = null;
-                if (BaselineId != 0)
-                {
-                    baseline = ObjectMapper.GetBaseline();
-                    if (baseline != null)
-                    {
-                        if (baseline.Item1 != BaselineId)
-                        {
-                            ObjectMapper.SetBaseline(BaselineId);
-                            baseline = ObjectMapper.GetBaseline();
-                        }
-                    }
-                }
                 NetworkObject realObj = ObjectMapper.Lookup(entId, objTypeId, false);
                 var realHash = 0;
                 if (realObj != null)
                     realHash = realObj.GetHashCode();
 
-                NetworkObject baselineObj = null;
-                if (baseline != null)
+                NetworkObject baseline = null;
+                var usebaseLine = msg.ReadBool();
+                uint bOffset = 0;
+                if (usebaseLine)
                 {
-                    baseline.Item2.TryGetValue(realHash, out baselineObj);
+                    byte offset = msg.ReadByte();
+                    var objBaselineId = BaselineId - (uint)offset;
+                    bOffset = objBaselineId;
+
+                    baseline = ObjectMapper.GetBaseline(objBaselineId, realHash);
                 }
 
 
                 var ownerType = obj.GetType().GetTypeInfo();
                 var dItem = DataLookupTable.Get(ownerType);
-                ReadNetObject(dItem, msg, obj, baselineObj);
+                ReadNetObject(dItem, msg, obj, baseline);
+                ObjectMapper.AddDeltaState(realHash, SnapId, obj);
+
+                if (BaselineId != 0 && realHash != 0)
+                    addDeltaCount++;
             }
 
-            if (state.Count > 0)
-                ObjectMapper.AddDeltaState(SnapId, state);
+            if (addDeltaCount == count)
+                ObjectMapper.LastSimId = BaselineId;
         }
 
         public override void Serialize(Bitstream msg)
@@ -92,20 +89,37 @@ namespace Asgard.Core.Network.Packets
             msg.Write((byte)Objects.Count);
             foreach(var obj in Objects)
             {
-                var ownerType = obj.Item2.GetType().GetTypeInfo();
+                var ownerType = obj.Object.GetType().GetTypeInfo();
                 ushort objTypeId = ObjectMapper.LookupType(ownerType);
                 msg.Write((byte)objTypeId);
-                msg.WriteVariableUInt32(obj.Item1);
+                msg.WriteVariableUInt32(obj.Lookup);
 
                 var dItem = DataLookupTable.Get(ownerType);
 
-                NetworkObject baseline = null;
+                DeltaWrapper baseline = null;
                 if (_baselineState != null)
                 {
-                    _baselineState.TryGetValue(obj.Item2.GetHashCode(), out baseline);
+                    _baselineState.TryGetValue(obj.Object.GetHashCode(), out baseline);
                 }
 
-                WriteNetObject(dItem, msg, obj.Item2, baseline);
+                NetworkObject baselineObj = null;
+                if (baseline != null)
+                {
+                    uint offset = BaselineId - baseline.Lookup;
+                    if (offset < Byte.MaxValue && baseline.Object != null)
+                    {
+                        msg.Write(true);
+                        msg.Write((byte)offset);
+                        baselineObj = baseline.Object;
+                    }
+                }
+
+                if (baselineObj == null)
+                {
+                    msg.Write(false);
+                }
+
+                WriteNetObject(dItem, msg, obj.Object, baselineObj);
             }
         }
 
@@ -328,14 +342,8 @@ namespace Asgard.Core.Network.Packets
                             var o = (NetworkObject)prop.CreateChildProperty();
                             if (o != null)
                             {
-                                var baselineSet = ObjectMapper.GetBaseline();
-                                NetworkObject childBaseline = null;
-                                if (baselineSet != null)
-                                {
-                                    baselineSet.Item2.TryGetValue(o.GetHashCode(), out childBaseline);
-                                }
-
-                                ReadNetObject(childProp, msg, o, childBaseline);
+                                var child = (NetworkObject)prop.Get<NetworkObject>(baseline);
+                                ReadNetObject(childProp, msg, o, child);
                                 prop.Set(owner, o);
                             }
                         }

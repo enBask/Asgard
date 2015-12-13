@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Mono_Server
 {
@@ -66,6 +67,28 @@ namespace Mono_Server
 
         private void SetupWorld()
         {
+            Task.Delay(1000).ContinueWith(t =>
+                {
+                    CreateTestObject();
+                    SetupWorld();
+                });
+        }
+
+        Random rng = new Random();
+        public void CreateTestObject()
+        {
+            var midgard = LookupSystem<Midgard>();
+            var entity = ObjectMapper.CreateEntity();
+            RenderData renderData = (RenderData)ObjectMapper.Create((uint)entity.UniqueId, typeof(RenderData));
+            renderData.Set(midgard, entity, _monoServer.Content);
+            entity.AddComponent(renderData);
+            var phyComp = entity.GetComponent<Physics2dComponent>();
+            phyComp.Body.LinearVelocity = new Vector2(rng.Next(-10, 10),rng.Next(-10, 10));
+
+            Task.Delay(90000).ContinueWith(t =>
+                {
+                    ObjectMapper.DestoryEntity(entity);
+                });            
         }
 
         private void OnLogin(MonoLoginPacket obj)

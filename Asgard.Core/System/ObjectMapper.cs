@@ -27,8 +27,8 @@ namespace Asgard.Core.System
         static List<Tuple<Entity, NetworkObject>> _snapshotCache = new List<Tuple<Entity, NetworkObject>>();
         static bool _inSnapshot = false;
 
-        static Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>> _deltaStates =
-            new Collections.LinkedList<Tuple<uint, Dictionary<int, NetworkObject>>>();
+        static Dictionary<int, Collections.LinkedList<Tuple<uint, NetworkObject>>> _deltaStates =
+            new Dictionary<int, Collections.LinkedList<Tuple<uint, NetworkObject>>>();
 
         internal static void Init(AsgardBase instance)
         {
@@ -248,34 +248,45 @@ namespace Asgard.Core.System
         }
 
 
-        internal static void AddDeltaState(uint tickId, Dictionary<int,NetworkObject> state)
+        internal static void AddDeltaState(int objHash, uint tickId, NetworkObject obj)
         {
-            var tuple = new Tuple<uint, Dictionary<int, NetworkObject>>(tickId, state);
-            _deltaStates.AddToTail(tuple);
+
+            if (objHash == 0) return;
+
+            Collections.LinkedList<Tuple<uint, NetworkObject>> objList;
+            if (!_deltaStates.TryGetValue(objHash, out objList))
+            {
+                _deltaStates[objHash] = objList = new
+                Collections.LinkedList<Tuple<uint, NetworkObject>>();
+            }
+
+            objList.AddToTail(new Tuple<uint, NetworkObject>(tickId, obj));
         }
 
-        internal static void SetBaseline(uint tickid)
+        internal static NetworkObject GetBaseline(uint baselineId, int objHash)
         {
-            foreach(var node in _deltaStates)
+            Collections.LinkedList<Tuple<uint, NetworkObject>> objList;
+            _deltaStates.TryGetValue(objHash, out objList);
+
+            if (objList != null)
             {
-                if (node.Value.Item1 == tickid)
+                foreach(var node in objList)
                 {
-                    _deltaStates.TruncateTo(node);
+                    if (node.Value.Item1 == baselineId)
+                    {
+                        objList.TruncateTo(node);
+                        return node.Value.Item2;
+                    }
                 }
             }
+
+            return null;
         }
 
-        internal static Tuple<uint, Dictionary<int, NetworkObject>> GetBaseline()
-        {
-            if (_deltaStates.First == null) return null;
-            return _deltaStates.First.Value;
-        }
-
+        internal static uint LastSimId = 0;
         internal static uint GetLastSimId()
         {
-            if (_deltaStates.Last == null) return 0;
-
-            return _deltaStates.Last.Value.Item1;
+            return LastSimId;
         }
 
     }

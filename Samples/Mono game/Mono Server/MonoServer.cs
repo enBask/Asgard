@@ -136,7 +136,7 @@ namespace Mono_Server
             var viewmap = _mapEntity.GetComponent<MapComponent>().Map;
             viewmap.Draw(_camera);
 
-            var ents = _gameServer.EntityManager.GetEntities(Aspect.All(typeof(RenderData), typeof(PlayerComponent)));
+            var ents = _gameServer.EntityManager.GetEntities(Aspect.All(typeof(RenderData)));
             var viewMatrix = _camera.GetViewMatrix();
             spriteBatch.Begin(transformMatrix: viewMatrix);
             foreach(var ent in ents)
