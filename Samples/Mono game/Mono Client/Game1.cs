@@ -168,8 +168,11 @@ namespace Mono_Client
             foreach(var ent in ents)
             {
                 var rd = ent.GetComponent<RenderData>();
-                rd.UpdateFromPhysics();
-                rd.Draw(spriteBatch);
+                if (rd != null)
+                {
+                    rd.UpdateFromPhysics();
+                    rd.Draw(spriteBatch);
+                }
             }
             spriteBatch.End();
 

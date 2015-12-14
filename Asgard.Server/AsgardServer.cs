@@ -158,8 +158,36 @@ namespace Asgard
                         continue;
                     }
 
-                    #region StateSync
+                    playerComp.trackEntity(nobj);
+
+                    #region DefinitionSync
+                    var defObjList = ObjectMapper.GetNetObjects(nobj, typeof(DefinitionNetworkObject));
+                    if (defObjList != null)
+                    {
+                        foreach (DefinitionNetworkObject obj in defObjList)
+                        {
+                            fullProcList.Add(obj);
+                            if (!playerComp.IsObjectKnown(obj))
+                            {
+                                playerComp.AddKnownObject(obj, (uint)nobj.UniqueId);
+                                _defSendList.Add(new DeltaWrapper()
+                                {
+                                    Lookup = (uint)nobj.UniqueId,
+                                    Object = obj
+                                });
+                            }
+                        }
+                    }
+                    #endregion
+
+                }
+
+                #region StateSync
+                var syncEntityList = playerComp.GetTrackedEntitiesByScore();
+                foreach (var nobj in syncEntityList)
+                {
                     var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));
+                    if (objList == null) continue;
                     foreach (var obj in objList)
                     {
                         var clone = obj.NetworkClone();
@@ -187,10 +215,10 @@ namespace Asgard
                         }
 
                         var baseline = playerComp.FindBaseline(obj);
-                        
+
                         deltaState.Add(new DeltaLookup()
                         {
-                            Lookup = obj.GetHashCode(), 
+                            Lookup = obj.GetHashCode(),
                             Object = clone
                         });
 
@@ -198,32 +226,15 @@ namespace Asgard
 
                         _stateSendList.Add(new DeltaWrapper()
                             {
-                                Lookup = (uint)nobj.UniqueId, 
+                                Lookup = (uint)nobj.UniqueId,
                                 Object = clone
                             });
                     }
 
-                  
-                    #endregion
-
-                    #region DefinitionSync
-                    var defObjList = ObjectMapper.GetNetObjects(nobj, typeof(DefinitionNetworkObject));
-                    foreach (DefinitionNetworkObject obj in defObjList)
-                    {
-                        fullProcList.Add(obj);
-                        if (!playerComp.IsObjectKnown(obj))
-                        {
-                            playerComp.AddKnownObject(obj, (uint)nobj.UniqueId);
-                            _defSendList.Add(new DeltaWrapper()
-                                {
-                                    Lookup = (uint)nobj.UniqueId, 
-                                    Object = obj
-                                });
-                        }
-                    }
-                    #endregion
                 }
+                #endregion
 
+                #region send packets
                 if (_stateSendList.Count > 0)
                 {
                     var packet = new DataObjectPacket();
@@ -241,7 +252,7 @@ namespace Asgard
                     packet.Objects = _defSendList;
                     _bifrost.Send(packet, node, 3);
                 }
-
+                #endregion
 
 
                 #region handle removed DefinitionNetworkObjects
@@ -254,6 +265,22 @@ namespace Asgard
                     var delObj = delObjItem.Item1 as DefinitionNetworkObject;
                     var nobjId = delObjItem.Item2;
                     var marked = delObj.Destory;
+
+                    var ent = EntityManager.GetEntityByUniqueId(nobjId);
+                    if (ent != null)
+                    {
+                        playerComp.UntrackEntity(ent);
+                        var comps = EntityManager.GetComponents(ent);
+                        foreach(var comp in comps)
+                        {
+                            var stateSyncComp = comp as StateSyncNetworkObject;
+                            if (stateSyncComp != null)
+                            {
+                                playerComp.RemoveDeltaTrack(stateSyncComp);
+                            }
+                        }
+                    }
+
                     delObj.Destory = true;
                     playerComp.RemoveKnownObject(delObj);
 

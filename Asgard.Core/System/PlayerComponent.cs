@@ -9,9 +9,44 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Artemis;
 
 namespace Asgard.EntitySystems.Components
 {
+    class AccumulatorEntity : IComparable<AccumulatorEntity>
+    {
+        public Entity Entity;
+        public int Score;
+
+        public AccumulatorEntity(Entity e, int s)
+        {
+            Entity = e;
+            Score = s;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals((AccumulatorEntity)obj, null))
+                return false;
+
+            return Entity.Equals(((AccumulatorEntity)obj).Entity);
+        }
+
+        public override int GetHashCode()
+        {
+            return Entity.GetHashCode();
+        }
+    
+        public int CompareTo(AccumulatorEntity other)
+        {
+            if (ReferenceEquals(other, this)) return 0;
+
+            if (other == null) return -1;
+
+            return Score.CompareTo(other.Score);
+        }
+}
+
     public class PlayerComponent : IComponent
     {
         public NetNode NetworkNode { get; set; }
@@ -25,15 +60,15 @@ namespace Asgard.EntitySystems.Components
         public float LerpEnd { get; set; }
 
         private Dictionary<NetworkObject, uint> _knownObjects;
-
         private Dictionary<int, DeltaList> _deltaBuffer;
-
+        private Dictionary<Entity, int> _accumBuffer;
         public PlayerComponent(NetNode networkNode)
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
             _knownObjects = new Dictionary<NetworkObject, uint>();
             _deltaBuffer = new Dictionary<int, DeltaList>();
+            _accumBuffer = new Dictionary<Entity, int>();
         }
 
         public PlayerStateData GetNextState()
@@ -84,7 +119,8 @@ namespace Asgard.EntitySystems.Components
         }
         #endregion
 
-        
+
+        #region delta state tracking
         internal void AddDeltaState(List<DeltaLookup> syncList)
         {
             foreach (var lookup in syncList)
@@ -107,7 +143,6 @@ namespace Asgard.EntitySystems.Components
 
         internal DeltaWrapper FindBaseline(NetworkObject baseObj)
         {
-
             DeltaList objList;
             if (_deltaBuffer.TryGetValue(baseObj.GetHashCode(), out objList))
             {
@@ -135,5 +170,62 @@ namespace Asgard.EntitySystems.Components
                 }
             }
         }
+
+        internal void RemoveDeltaTrack(NetworkObject obj)
+        {
+            if (_deltaBuffer.ContainsKey(obj.GetHashCode()))
+            {
+                _deltaBuffer.Remove(obj.GetHashCode());
+            }
+        }
+        #endregion
+
+        #region accumulator buffer
+        internal void trackEntity(Entity e)
+        {
+            var score = calcStateScore(e);
+            int stored_score;
+            if (_accumBuffer.TryGetValue(e, out stored_score))
+            {
+                score += stored_score;
+            }
+            _accumBuffer[e] = score;
+        }
+
+        internal void UntrackEntity(Entity e)
+        {
+            if (_accumBuffer.ContainsKey(e))
+                _accumBuffer.Remove(e);
+        }
+
+        internal List<Entity> GetTrackedEntitiesByScore(int maxCount=5)
+        {
+            var list= _accumBuffer.OrderByDescending(kvp => kvp.Value)
+                .Take(maxCount).Select<KeyValuePair<Entity, int>, Entity>(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var e in list)
+                _accumBuffer.Remove(e);
+
+            return list;
+        }
+
+        internal int calcStateScore(Entity e)
+        {
+            var playerComp = e.GetComponent<PlayerComponent>();
+            if (playerComp == this)
+                return 100000; //high pri ourselves to always sync.
+
+            var phyComp = e.GetComponent<Physics2dComponent>();
+            if (phyComp != null && phyComp.Body != null)
+            {
+                var lvel = phyComp.Body.LinearVelocity;
+                if (lvel.LengthSquared() >= 0.0001f)
+                    return 10; // moving objects get a pri boost
+            }
+
+            return 1; // default to a very small pri boost to pop above dead objects.
+        }
+        #endregion
     }
 }

@@ -161,15 +161,14 @@ namespace Asgard.Core.System
             List<NetworkObject> objList;
             _netObjectCache.TryGetValue(entity, out objList);
 
+            if (objList == null) return null;
+
             return objList.Where(o => o.GetType().IsSubclassOf(type)).ToList();
         }
 
         internal static IEnumerable<Entity> GetEntityCache()
         {
-            foreach( var e in _netObjectCache.Keys)
-            {
-                yield return e;
-            }
+            return _netObjectCache.Keys.ToList();
         }
 
         public static void DestroyNetObject(Entity ent, NetworkObject netObj)

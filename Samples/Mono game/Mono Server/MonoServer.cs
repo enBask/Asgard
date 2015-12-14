@@ -142,9 +142,12 @@ namespace Mono_Server
             foreach(var ent in ents)
             {
                 var renderData = ent.GetComponent<RenderData>();
+                if (renderData != null)
+                {
+                    renderData.UpdateFromPhysics();
+                    renderData.Draw(spriteBatch);
+                }
 
-                renderData.UpdateFromPhysics();
-                renderData.Draw(spriteBatch);
             }
             spriteBatch.End();
 
