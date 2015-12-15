@@ -56,13 +56,7 @@ namespace Mono_Client
             _gameClient = new gameClient();
             _gameClient.Content = Content;
             RenderData.Content = Content;
-            var th = new Thread(() =>
-            {
-                _gameClient.Run();
-            });
-
-            th.IsBackground = true;
-            th.Start();
+            _gameClient.Start();
 
             BuildWorld();
         }
@@ -105,6 +99,8 @@ namespace Mono_Client
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            _gameClient.Tick(gameTime.ElapsedGameTime.TotalSeconds);
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 

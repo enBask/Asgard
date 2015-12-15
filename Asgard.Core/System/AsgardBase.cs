@@ -111,8 +111,21 @@ namespace Asgard.Core.System
         }
         #endregion
 
-        protected virtual void Tick(double delta)
+        public  void Tick(double delta)
         {
+
+            BeforeTick(delta);
+
+            foreach (var runOrder in _sortedSystems.Values)
+            {
+                foreach (var system in runOrder)
+                {
+                    system.Tick(delta);
+                }
+            }
+            _entityWorld.Update();
+
+            AfterTick(delta);
 
         }
 
@@ -120,6 +133,12 @@ namespace Asgard.Core.System
         {
 
         }
+
+        protected virtual void AfterTick(double delta)
+        {
+
+        }
+
 
         protected virtual void BeforePhysics(float delta)
         {
@@ -130,7 +149,7 @@ namespace Asgard.Core.System
         {
         }
 
-        public virtual void Run()
+        public virtual void Start()
         {
             foreach (var runOrder in _sortedSystems.Values)
             {
@@ -139,32 +158,10 @@ namespace Asgard.Core.System
                     system.Start();
                 }
             }
+        }
 
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-            double lastSecondStamp = timer.Elapsed.TotalSeconds;
-            while (true)
-            {
-                double elapsedSeconds = timer.Elapsed.TotalSeconds;
-                double delta = elapsedSeconds - lastSecondStamp;
-                lastSecondStamp = elapsedSeconds;
-
-                BeforeTick(delta);
-
-                foreach (var runOrder in _sortedSystems.Values)
-                {
-                    foreach (var system in runOrder)
-                    {
-                        system.Tick(delta);
-                    }
-                }
-                _entityWorld.Update();
-
-                Tick(delta);
-
-                Thread.Sleep(1);
-            }
-
+        public virtual void Stop()
+        {
             foreach (var runOrder in _sortedSystems.Values)
             {
                 foreach (var system in runOrder)
@@ -173,7 +170,5 @@ namespace Asgard.Core.System
                 }
             }
         }
-
-
     }
 }

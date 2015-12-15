@@ -67,9 +67,9 @@ namespace Mono_Client
             _thisPlayer = entity;
         }
 
-        protected override void Tick(double delta)
+        protected override void AfterTick(double delta)
         {
-            base.Tick(delta);
+            base.AfterTick(delta);
 
             if (_thisPlayer == null) return;
             var playerComp = _thisPlayer.GetComponent<PlayerComponent>();

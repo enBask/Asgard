@@ -70,12 +70,7 @@ namespace Mono_Server
         {
 
             _gameServer = new GameServer(this);
-            var th = new Thread(() =>
-            {
-                _gameServer.Run();
-            });
-            th.IsBackground = true;
-            th.Start();
+            _gameServer.Start();
 
             _lineTexture = new Texture2D(GraphicsDevice, 1, 1);
             _lineTexture.SetData<Color>(
@@ -114,6 +109,7 @@ namespace Mono_Server
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            _gameServer.Tick(gameTime.ElapsedGameTime.TotalSeconds);
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 

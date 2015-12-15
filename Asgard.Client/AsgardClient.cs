@@ -78,7 +78,7 @@ namespace Asgard.Client
             }
         }
 
-        protected override void Tick(double delta)
+        protected override void AfterTick(double delta)
         {
             _netAccum += delta;
             var invRate = 1f / (float)_netConfig.Tickrate;
