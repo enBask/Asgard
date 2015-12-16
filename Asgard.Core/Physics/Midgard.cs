@@ -16,6 +16,7 @@ namespace Asgard.Core.Physics
         public event TickCallback OnBeforeTick;
         public event TickCallback OnAfterTick;
 
+        List<Body> _queueDeleteList = new List<Body>();
         World _world;
         int _tickRate;
         float _invTickRate;
@@ -46,6 +47,14 @@ namespace Asgard.Core.Physics
             body.BodyType = BodyType.Dynamic;
             body.LinearVelocity = definition.LinearVelocity;
             return body;
+        }
+
+        public void DeleteBody(Physics2dComponent comp)
+        {
+            if (comp != null && comp.Body != null)
+            {
+                _queueDeleteList.Add(comp.Body);
+            }
         }
 
         public World GetWorld()
@@ -88,6 +97,12 @@ namespace Asgard.Core.Physics
             {
                 OnBeforeTick(delta);
             }
+
+            foreach(var body in _queueDeleteList)
+            {
+                _world.RemoveBody(body);
+            }
+            _queueDeleteList.Clear();
 
             _world.Step(delta);
             NetTime.SimTick++;

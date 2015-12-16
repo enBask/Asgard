@@ -75,6 +75,7 @@ namespace Mono_Server
         }
 
         Random rng = new Random();
+
         public void CreateTestObject()
         {
             var midgard = LookupSystem<Midgard>();

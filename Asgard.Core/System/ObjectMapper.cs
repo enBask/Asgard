@@ -224,6 +224,7 @@ namespace Asgard.Core.System
                     if (obj is DefinitionNetworkObject)
                     {
                         (obj as DefinitionNetworkObject).Destory = true;
+                        (obj as DefinitionNetworkObject).OnDestoryed(_instance, ent);
                     }
                 }
             }

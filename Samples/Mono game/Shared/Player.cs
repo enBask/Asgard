@@ -95,7 +95,7 @@ namespace Shared
             var phyComp = entity.GetComponent<Physics2dComponent>();
             if (phyComp != null && phyComp.Body != null)
             {
-                midgard.GetWorld().RemoveBody(phyComp.Body);
+                midgard.DeleteBody(phyComp);
             }
 
             ObjectMapper.DestoryEntity(entity);
