@@ -5,6 +5,7 @@ using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.EntitySystems;
 using Asgard.EntitySystems.Components;
+using Asgard.ScriptSystem;
 using Farseer.Framework;
 using FarseerPhysics.Collision.Shapes;
 using FarseerPhysics.Common;
@@ -37,10 +38,12 @@ namespace Mono_Server
 
             _bifrost.OnDisconnect += _bifrost_OnDisconnect;
 
-            SetupWorld();
+            JavascriptSystem jsSystem = new JavascriptSystem();
+            AddSystem(jsSystem);
 
-
+            jsSystem.Execute(@"test.js");
         }
+
 
         private void _bifrost_OnDisconnect(Asgard.Core.Network.NetNode connection)
         {
@@ -65,18 +68,10 @@ namespace Mono_Server
             }
         }
 
-        private void SetupWorld()
-        {
-            Task.Delay(1000).ContinueWith(t =>
-                {
-                    CreateTestObject();
-                    SetupWorld();
-                });
-        }
 
         Random rng = new Random();
 
-        public void CreateTestObject()
+        public Entity CreateTestObject()
         {
             var midgard = LookupSystem<Midgard>();
             var entity = ObjectMapper.CreateEntity();
@@ -85,11 +80,12 @@ namespace Mono_Server
             entity.AddComponent(renderData);
             var phyComp = entity.GetComponent<Physics2dComponent>();
             phyComp.Body.LinearVelocity = new Vector2(rng.Next(-10, 10),rng.Next(-10, 10));
+            return entity;
+        }
 
-            Task.Delay(90000).ContinueWith(t =>
-                {
-                    ObjectMapper.DestoryEntity(entity);
-                });            
+        public void DestoryTestObject(Entity e)
+        {
+            ObjectMapper.DestoryEntity(e);
         }
 
         private void OnLogin(MonoLoginPacket obj)
@@ -119,7 +115,7 @@ namespace Mono_Server
             {
                 var playerComp = player.GetComponent<PlayerComponent>();
                 var renderData = player.GetComponent<RenderData>();
-                var state = playerComp.GetNextState();
+                PlayerState state = playerComp.GetNextState() as PlayerState;
                 if (state == null) continue;
 
                 var phyComp = player.GetComponent<Physics2dComponent>();

@@ -247,6 +247,29 @@ namespace Asgard.Core.System
             return tmpList;
         }
 
+        internal static void SetCurrentPlayerState(uint id, PlayerStateData data)
+        {
+            var e = _manager.GetEntityByUniqueId(id);
+            EntitySystems.Components.PlayerComponent pc =
+                e.GetComponent<EntitySystems.Components.PlayerComponent>();
+            if (pc != null)
+            {
+                pc.LastSyncState = data;
+            }
+
+        }
+        internal static PlayerStateData GetCurrentPlayerState(uint id)
+        {
+            var e = _manager.GetEntityByUniqueId(id);
+            EntitySystems.Components.PlayerComponent pc = 
+                e.GetComponent<EntitySystems.Components.PlayerComponent>();
+            if (pc != null)
+            {
+                return pc.LastSyncState;
+            }
+
+            return null;
+        }
 
         internal static void AddDeltaState(int objHash, uint tickId, NetworkObject obj)
         {

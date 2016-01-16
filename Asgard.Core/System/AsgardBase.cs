@@ -109,6 +109,17 @@ namespace Asgard.Core.System
 
             return null;
         }
+
+        public ISystem LookupSystem(Type type)
+        {
+            ISystem sys;
+            if (_systems.TryGetValue(type, out sys))
+            {
+                return sys;
+            }
+
+            return null;
+        }
         #endregion
 
         public  void Tick(double delta)

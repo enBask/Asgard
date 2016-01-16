@@ -54,11 +54,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClientStatePacket.cs" />
     <Compile Include="MapComponent.cs" />
     <Compile Include="MapData.cs" />
     <Compile Include="MonoLoginPacket.cs" />
     <Compile Include="Player.cs" />
+    <Compile Include="PlayerState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

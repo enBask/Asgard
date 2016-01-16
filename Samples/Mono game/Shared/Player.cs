@@ -140,6 +140,11 @@ namespace Shared
 
         public Vector2 GetPosition()
         {
+            if (_sprite == null)
+            {
+                return Vector2.Zero;
+            }
+
             return _sprite.Position;
         }
 

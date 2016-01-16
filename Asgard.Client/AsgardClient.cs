@@ -21,8 +21,7 @@ using System.Threading.Tasks;
 
 namespace Asgard.Client
 {
-    public class AsgardClient<TClientState>:  AsgardBase
-        where TClientState : Packet
+    public abstract class AsgardClient : AsgardBase
     {
 
         protected bool _pumpNetwork = true;
@@ -230,14 +229,20 @@ namespace Asgard.Client
         {
             if (GetServerNode() == null) return;
 
-            var clientPacket = GetClientState();
-            if (clientPacket == null) return;
-            _bifrost.Send(clientPacket, 1);
+            var states = GetClientState();
+            if (states == null) return;
+        
+            ClientStatePacket packet = new ClientStatePacket();
+            packet.State = states;
+            packet.PreviousState = _lastClientState;
+            packet.PlayerId = (uint)GetPlayer().UniqueId;
+            _lastClientState = states.Count > 0 ? states.Last() : null;
+            _bifrost.Send(packet, 1);
         }
 
-        protected virtual TClientState GetClientState()
-        {
-            return null;
-        }
+        private PlayerStateData _lastClientState = null;
+        protected abstract List<PlayerStateData> GetClientState();
+
+        protected abstract Entity GetPlayer();
     }
 }

@@ -45,6 +45,10 @@
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NiL.JS, Version=2.0.855.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
+      <HintPath>..\packages\NiL.JS.2.0.855.0\lib\net46\NiL.JS.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -62,6 +66,13 @@
     <Compile Include="Network\Packets\Login.Packet.cs" />
     <Compile Include="PhysicsConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScriptSystem\Javascript\Console.cs" />
+    <Compile Include="ScriptSystem\Javascript\Module.cs" />
+    <Compile Include="ScriptSystem\Javascript\Modules\Asgard.cs" />
+    <Compile Include="ScriptSystem\Javascript\Modules\EntityModule.cs" />
+    <Compile Include="ScriptSystem\PathHelpers.cs" />
+    <Compile Include="ScriptSystem\ScriptConfig.cs" />
+    <Compile Include="ScriptSystem\ScriptSystem.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

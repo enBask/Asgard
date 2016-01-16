@@ -53,6 +53,7 @@ namespace Asgard.EntitySystems.Components
 
         public JitterBuffer<PlayerStateData> InputBuffer { get; set; }
         public PlayerStateData CurrentState { get; set; }
+        public PlayerStateData LastSyncState { get; set; }
         public Vector2 OldPosition { get; set; }
         public Vector2 RenderPosition { get; set; }
         public bool LerpToReal { get; set; }

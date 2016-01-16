@@ -123,7 +123,7 @@ namespace Asgard.Core.Network.Packets
             }
         }
 
-        private bool UseBaseline(DataSerializationProperty prop, NetworkObject owner, NetworkObject baseline)
+        private static bool UseBaseline(DataSerializationProperty prop, NetworkObject owner, NetworkObject baseline)
         {
             if (baseline == null) return false;
             switch (prop.Type)
@@ -205,7 +205,7 @@ namespace Asgard.Core.Network.Packets
             return false;
         }
 
-        private void ApplyBaseline(DataSerializationProperty prop, NetworkObject owner, NetworkObject clone)
+        private static void ApplyBaseline(DataSerializationProperty prop, NetworkObject owner, NetworkObject clone)
         {
             switch (prop.Type)
             {
@@ -272,7 +272,7 @@ namespace Asgard.Core.Network.Packets
             }
         }
 
-        private void ReadNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner, NetworkObject baseline=null)
+        internal static void ReadNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner, NetworkObject baseline=null)
         {
             if (owner is DefinitionNetworkObject)
             {
@@ -352,7 +352,7 @@ namespace Asgard.Core.Network.Packets
             }
         }
 
-        private void WriteNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner, NetworkObject baseline = null)
+        internal static void WriteNetObject(DataSerializationItem item, Bitstream msg, NetworkObject owner, NetworkObject baseline = null)
         {
             if (owner is DefinitionNetworkObject)
             {

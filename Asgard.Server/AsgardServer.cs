@@ -17,6 +17,7 @@ using Asgard.Core.Physics;
 using Asgard.EntitySystems.Components;
 using Asgard.EntitySystems;
 using FarseerPhysics.Common;
+using Asgard.ScriptSystem;
 
 namespace Asgard
 {
@@ -28,6 +29,7 @@ namespace Asgard
 
         protected NetConfig _netConfig;
         protected PhysicsConfig _phyConfig;
+        protected ScriptConfig _scriptConfig;
 
         double _netAccum = 0;
         #endregion
@@ -41,11 +43,16 @@ namespace Asgard
         {
             _netConfig = Config.Get<NetConfig>("network");
             _phyConfig = Config.Get<PhysicsConfig>("physics");
+            _scriptConfig = Config.Get<ScriptConfig>("script");
+
+
+            PathHelpers.SetBasePath(_scriptConfig.ScriptPath);
 
             _bifrost = new BifrostServer(_netConfig.Port, _netConfig.MaxConnections);
             AddInternalSystem(_bifrost, 0);
-
             PacketFactory.AddCallback<AckStatePacket>(OnAckState);
+
+
         }
 
         private void OnAckState(AckStatePacket obj)

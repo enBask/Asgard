@@ -15,23 +15,23 @@ using Asgard.Core.Physics;
 
 namespace Mono_Client
 {
-    public class gameClient : AsgardClient<ClientStatePacket>
+    public class gameClient : AsgardClient
     {
         public ContentManager Content;
 
         private Entity _thisPlayer;
-        List<PlayerStateData> StateList;
+        List<PlayerState> StateList;
 
-        public PlayerStateData CurrentState { get; set; }
+        public PlayerState CurrentState { get; set; }
 
-        Asgard.Core.Collections.LinkedList<PlayerStateData> _movebuffer =
-            new Asgard.Core.Collections.LinkedList<PlayerStateData>();
+        Asgard.Core.Collections.LinkedList<PlayerState> _movebuffer =
+            new Asgard.Core.Collections.LinkedList<PlayerState>();
 
 
         public gameClient()
         {
-            CurrentState = new PlayerStateData();
-            StateList = new List<PlayerStateData>();
+            CurrentState = new PlayerState(null);
+            StateList = new List<PlayerState>();
 
             PacketFactory.AddCallback<LoginResponsePacket>(onLogin);
 
@@ -145,27 +145,26 @@ namespace Mono_Client
             var phyComp = _thisPlayer.GetComponent<Physics2dComponent>();
             if (phyComp == null || phyComp.Body == null) return;
 
-            PlayerStateData newState = new PlayerStateData()
+            PlayerState newState = new PlayerState(phyComp)
             {
                 LeftMouseDown = CurrentState.LeftMouseDown,
-                MousePositionInWorld = CurrentState.MousePositionInWorld,
-                SimTick = NetTime.SimTick,
-                Position = phyComp.Body.Position
+                MousePositionInWorld = CurrentState.MousePositionInWorld
             };
 
             StateList.Add(newState);
             _movebuffer.AddToTail(newState);
-
-           
-
         }
 
-        protected override ClientStatePacket GetClientState()
+        protected override List<PlayerStateData> GetClientState()
         {
-            ClientStatePacket packet = new ClientStatePacket();
-            packet.State = new List<PlayerStateData>(StateList);
+            var states = new List<PlayerStateData>(StateList);
             StateList.Clear();
-            return packet;
+            return states;
+        }
+
+        protected override Entity GetPlayer()
+        {
+            return _thisPlayer;
         }
 
         private void ApplyLagComp()
@@ -175,10 +174,10 @@ namespace Mono_Client
             var netSync = _thisPlayer.GetComponent<NetPhysicsObject>();
             if (netSync == null) return;
 
-            Asgard.Core.Collections.LinkedListNode<PlayerStateData> found_node = null;
+            Asgard.Core.Collections.LinkedListNode<PlayerState> found_node = null;
             foreach (var node in _movebuffer)
             {
-                if (node.Value.SimTick == netSync.SimTick)
+                if (node.Value.SimTick.Value == netSync.SimTick.Value)
                 {
                     found_node = node;
                     break;
@@ -187,9 +186,9 @@ namespace Mono_Client
 
             if (found_node != null)
             {
-                var moveData = found_node.Value;
+                var moveData = found_node.Value as PlayerStateData;
 
-                var diff = netSync.Position - moveData.Position;
+                var diff = netSync.Position.Value - moveData.Position.Value;
 
                 if (diff.LengthSquared() > 0)
                 {
