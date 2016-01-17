@@ -8,6 +8,7 @@ using Asgard.Core.Interpolation;
 using Asgard.Core.Network;
 using Asgard.Core.Network.Data;
 using Asgard.Core.Network.Packets;
+using Asgard.Core.Network.RPC;
 using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.Core.Utils;
@@ -42,6 +43,7 @@ namespace Asgard.Client
             _netConfig = Config.Get<NetConfig>("network");
 
             _bifrost = new BifrostClient(_netConfig.Host, _netConfig.Port);
+            RPCManager.SetConnection(_bifrost);
             AddInternalSystem(_bifrost, 0);
 
             float delay_amount = (float)Math.Round((1f / _netConfig.Tickrate) * 6f, 2);

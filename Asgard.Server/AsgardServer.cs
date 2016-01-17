@@ -18,6 +18,7 @@ using Asgard.EntitySystems.Components;
 using Asgard.EntitySystems;
 using FarseerPhysics.Common;
 using Asgard.ScriptSystem;
+using Asgard.Core.Network.RPC;
 
 namespace Asgard
 {
@@ -49,6 +50,7 @@ namespace Asgard
             PathHelpers.SetBasePath(_scriptConfig.ScriptPath);
 
             _bifrost = new BifrostServer(_netConfig.Port, _netConfig.MaxConnections);
+            RPCManager.SetConnection(_bifrost);
             AddInternalSystem(_bifrost, 0);
             PacketFactory.AddCallback<AckStatePacket>(OnAckState);
             PacketFactory.AddCallback<ClientStatePacket>(OnClientState);

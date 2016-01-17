@@ -16,6 +16,9 @@ using Artemis;
 using Asgard.Core.System;
 using FarseerPhysics.Common;
 using FarseerPhysics.Collision.Shapes;
+using Asgard.Core.Network.RPC;
+using System.Diagnostics;
+using Asgard.Core.Network;
 
 namespace Shared
 {
@@ -33,8 +36,8 @@ namespace Shared
 
         public RenderData()
         {
-
         }
+        
 
         public void Set(Midgard midgard, Entity entity, ContentManager manager)
         {

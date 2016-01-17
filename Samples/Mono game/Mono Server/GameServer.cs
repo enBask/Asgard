@@ -88,6 +88,8 @@ namespace Mono_Server
             LoginResponsePacket packet = new LoginResponsePacket();
             packet.OwnerEntityId = (uint)entity.UniqueId;
             _bifrost.Send(packet, obj.Connection);
+
+            renderData.CallRPCTest("this is a RPC", new Farseer.Framework.Vector2(10,15), obj.Connection);
         }
 
         protected override void BeforePhysics(float delta)

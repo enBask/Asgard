@@ -52,7 +52,11 @@ namespace Asgard.Core.Network.Data
 
         public DataSerializationProperty(PropertyInfo prop, Type propType)
         {
-            propName = prop.Name;
+            if (prop != null)
+            {
+                propName = prop.Name;
+            }
+
             resolvedType = propType;
             #region type conv
             if (propType == typeof(bool))

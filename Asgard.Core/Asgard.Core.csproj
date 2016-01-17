@@ -71,6 +71,8 @@
     <Compile Include="Network\Data\DeltaWrapper.cs" />
     <Compile Include="Network\Packets\AckStatePacket.cs" />
     <Compile Include="Network\Packets\PlayerStatePacket.cs" />
+    <Compile Include="Network\Packets\RPCPacket.cs" />
+    <Compile Include="Network\RPC\RPCManager.cs" />
     <Compile Include="Physics\BodyDefinition.cs" />
     <Compile Include="Physics\Midgard.cs" />
     <Compile Include="Network\Connection.cs" />

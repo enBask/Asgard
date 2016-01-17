@@ -1,7 +1,7 @@
 var asgard = require('asgard');
 var entityMgr = require('entityManager');
 
-var i = setInterval(createTestObject, 1000);
+//var i = setInterval(createTestObject, 1000);
 
 function createTestObject() {
 

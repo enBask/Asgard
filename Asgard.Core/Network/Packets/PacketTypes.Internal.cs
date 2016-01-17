@@ -12,6 +12,7 @@ namespace Asgard.Core.Network.Packets
         LOGIN_RESPONSE,
         DATA_OBJECT,
         ACK_STATE_TICK,
+        RPC,
         MAX_PACKET=32
     }
 }
