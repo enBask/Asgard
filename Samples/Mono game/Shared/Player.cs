@@ -89,7 +89,7 @@ namespace Shared
             comp.Body.CollidesWith = FarseerPhysics.Dynamics.Category.Cat1;
         }
 
-        public override void OnDestoryed(AsgardBase instance, Entity entity)
+        public override void OnDestroyed(AsgardBase instance, Entity entity, bool destoryEntity=true)
         {
             var midgard = instance.LookupSystem<Midgard>();
             var phyComp = entity.GetComponent<Physics2dComponent>();
@@ -98,7 +98,7 @@ namespace Shared
                 midgard.DeleteBody(phyComp);
             }
 
-            ObjectMapper.DestoryEntity(entity);
+            ObjectMapper.DestroyEntity(entity, destoryEntity);
         }
 
         public override void OnCreated(AsgardBase instance, Entity entity)

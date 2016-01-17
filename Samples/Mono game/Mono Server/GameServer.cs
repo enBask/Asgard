@@ -59,6 +59,7 @@ namespace Mono_Server
         {
             var midgard = LookupSystem<Midgard>();
             var entity = ObjectMapper.CreateEntity();
+            
             RenderData renderData = (RenderData)ObjectMapper.Create((uint)entity.UniqueId, typeof(RenderData));
             renderData.Set(midgard, entity, _monoServer.Content);
             entity.AddComponent(renderData);
@@ -69,7 +70,7 @@ namespace Mono_Server
 
         public void DestoryTestObject(Entity e)
         {
-            ObjectMapper.DestoryEntity(e);
+            ObjectMapper.DestroyEntity(e);
         }
 
         private void OnLogin(MonoLoginPacket obj)

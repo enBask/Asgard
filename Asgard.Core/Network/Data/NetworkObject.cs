@@ -73,7 +73,7 @@ namespace Asgard.Core.Network.Data
 
     public class DefinitionNetworkObject: NetworkObject
     {
-        internal bool Destory { get; set; }
+        internal bool Destroy { get; set; }
 
         public DefinitionNetworkObject() : base()
         {
@@ -89,7 +89,7 @@ namespace Asgard.Core.Network.Data
 
         }
 
-        public virtual void OnDestoryed(AsgardBase instance, Entity entity)
+        public virtual void OnDestroyed(AsgardBase instance, Entity entity, bool destroyEntity=true)
         {
 
         }

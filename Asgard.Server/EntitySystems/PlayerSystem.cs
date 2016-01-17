@@ -63,7 +63,7 @@ namespace Asgard.EntitySystems
                 Entity removeEntity;
                 _playerNodeLookup.TryRemove(playerComp.NetworkNode, out removeEntity);
                 player.RemoveComponent<PlayerComponent>();
-                ObjectMapper.DestoryEntity(player);
+                ObjectMapper.DestroyEntity(player);
             }
         }
 

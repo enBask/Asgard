@@ -1,15 +1,17 @@
 var asgard = require('asgard');
 var entityMgr = require('entityManager');
 
-//var i = setInterval(createTestObject, 1000);
+var i = setInterval(createTestObject, 1000);
 
 function createTestObject() {
 
     var e = asgard.CreateTestObject();
-
+    
     setTimeout(function () {
         asgard.DestoryTestObject(e);
     }, 10000);
+    
+    
 
     //clearTimeout(i);
 }

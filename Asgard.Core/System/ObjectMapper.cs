@@ -81,7 +81,7 @@ namespace Asgard.Core.System
             if (obj is DefinitionNetworkObject)
             {
                 var entity = _manager.GetEntityByUniqueId(entityId);
-                (obj as DefinitionNetworkObject).OnDestoryed(_instance, entity);
+                (obj as DefinitionNetworkObject).OnDestroyed(_instance, entity);
             }
         }
 
@@ -199,7 +199,8 @@ namespace Asgard.Core.System
             if (id == 0)
             {
                 id = ++_master_entity_id;
-                return _manager.Create(id);
+                var e = _manager.Create(id);
+                return e;
             }
             else
             {
@@ -212,7 +213,7 @@ namespace Asgard.Core.System
             }
         }
 
-        public static void DestoryEntity(Entity ent)
+        public static void DestroyEntity(Entity ent, bool destoryEntity=true)
         {
             List<NetworkObject> objCache;
             if (_netObjectCache.TryGetValue(ent, out objCache))
@@ -223,13 +224,16 @@ namespace Asgard.Core.System
                 {
                     if (obj is DefinitionNetworkObject)
                     {
-                        (obj as DefinitionNetworkObject).Destory = true;
-                        (obj as DefinitionNetworkObject).OnDestoryed(_instance, ent);
+                        (obj as DefinitionNetworkObject).Destroy = true;
+                        (obj as DefinitionNetworkObject).OnDestroyed(_instance, ent, false);
                     }
                 }
             }
-            _manager.Remove(ent);
-            
+
+            if (destoryEntity)
+            {
+                _manager.Remove(ent);
+            }
         }
        
 

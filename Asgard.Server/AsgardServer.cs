@@ -304,7 +304,7 @@ namespace Asgard
                 {
                     var delObj = delObjItem.Item1 as DefinitionNetworkObject;
                     var nobjId = delObjItem.Item2;
-                    var marked = delObj.Destory;
+                    var marked = delObj.Destroy;
 
                     var ent = EntityManager.GetEntityByUniqueId(nobjId);
                     if (ent != null)
@@ -321,7 +321,7 @@ namespace Asgard
                         }
                     }
 
-                    delObj.Destory = true;
+                    delObj.Destroy = true;
                     playerComp.RemoveKnownObject(delObj);
 
                     _defSendList.Add(new DeltaWrapper()
@@ -330,7 +330,7 @@ namespace Asgard
                         Object = delObj
                     });
                     if (!marked)
-                        delObj.Destory = false;
+                        delObj.Destroy = false;
                 }
                 if (_defSendList.Count > 0)
                 {

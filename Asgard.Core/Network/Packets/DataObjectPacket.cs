@@ -279,7 +279,7 @@ namespace Asgard.Core.Network.Packets
                 var d = msg.ReadBool();
                 if (d)
                 {
-                    (owner as DefinitionNetworkObject).Destory = true;
+                    (owner as DefinitionNetworkObject).Destroy = true;
                     return;
                 }
             }
@@ -356,7 +356,7 @@ namespace Asgard.Core.Network.Packets
         {
             if (owner is DefinitionNetworkObject)
             {
-                if ((owner as DefinitionNetworkObject).Destory)
+                if ((owner as DefinitionNetworkObject).Destroy)
                 {
                     msg.Write(true);
                     return;

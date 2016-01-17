@@ -278,7 +278,7 @@ namespace Asgard.Client
 
                     if (netObj.Item2 is DefinitionNetworkObject)
                     {
-                        if ((netObj.Item2 as DefinitionNetworkObject).Destory)
+                        if ((netObj.Item2 as DefinitionNetworkObject).Destroy)
                         {
                             var defObA = entity.GetComponent(compType);
                             if (defObA != null)
@@ -336,11 +336,14 @@ namespace Asgard.Client
 
             var states = GetClientState();
             if (states == null) return;
-        
+
+            var playerEnt = GetPlayer();
+            if (playerEnt == null) return;
+
             ClientStatePacket packet = new ClientStatePacket();
             packet.State = states;
             packet.PreviousState = _lastClientState;
-            packet.PlayerId = (uint)GetPlayer().UniqueId;
+            packet.PlayerId = (uint)playerEnt.UniqueId;
             _lastClientState = states.Count > 0 ? states.Last() : null;
             _bifrost.Send(packet, 1);
         }
