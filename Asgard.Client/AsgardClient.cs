@@ -12,6 +12,7 @@ using Asgard.Core.Physics;
 using Asgard.Core.System;
 using Asgard.Core.Utils;
 using Asgard.EntitySystems.Components;
+using Farseer.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +29,10 @@ namespace Asgard.Client
 
         public delegate void AsgardClientCallback();
 
+        List<PlayerStateData> _stateList;
+        Core.Collections.LinkedList<PlayerStateData> _moveBuffer;
         JitterBuffer<List<Tuple<Entity,NetworkObject>>> _jitterBuffer;
+
         double _netAccum = 0;
         BifrostClient _bifrost = null;
         NetConfig _netConfig;
@@ -43,6 +47,8 @@ namespace Asgard.Client
             float delay_amount = (float)Math.Round((1f / _netConfig.Tickrate) * 6f, 2);
 
             _jitterBuffer = new JitterBuffer<List<Tuple<Entity, NetworkObject>>>(_netConfig.Tickrate);
+            _stateList = new List<PlayerStateData>();
+            _moveBuffer = new Core.Collections.LinkedList<PlayerStateData>();
 
         }
 
@@ -89,12 +95,45 @@ namespace Asgard.Client
                     SendClientState();
                 }
             }
+
+            #region client lag comp smoothing
+            //smooth client movement against lag comp.
+            var thisPlayer = GetPlayer();
+            if (thisPlayer == null) return;
+            var playerComp = thisPlayer.GetComponent<PlayerComponent>();
+            var phyComp = thisPlayer.GetComponent<Physics2dComponent>();
+            if (phyComp == null || phyComp.Body == null) return;
+
+
+            var d = (phyComp.Body.Position - playerComp.OldPosition).LengthSquared();
+            if (playerComp.LerpToReal && d < 5f)
+            {
+                float t = (float)((NetTime.RealTime - playerComp.LerpStart)
+                    / (playerComp.LerpEnd - playerComp.LerpStart));
+                t = Math.Min(t, 1.0f);
+                t = Math.Max(t, 0.0f);
+
+                playerComp.RenderPosition = Vector2.Lerp(playerComp.OldPosition, phyComp.Body.Position, t);
+                if ((playerComp.OldPosition - phyComp.Body.Position).LengthSquared() <= 0.0001f)
+                {
+                    playerComp.LerpToReal = false;
+                }
+            }
+            else
+            {
+                playerComp.LerpToReal = false;
+                playerComp.OldPosition = phyComp.Body.Position;
+                playerComp.RenderPosition = phyComp.Body.Position;
+            }
+            #endregion
+
         }
 
         protected override void BeforePhysics(float delta)
         {
             base.BeforePhysics(delta);
             MergeJitterBuffer();
+            ApplyLagComp();
 
             var ents = EntityManager.GetEntities(Aspect.One(typeof(NetPhysicsObject)));
             foreach (var ent in ents)
@@ -119,7 +158,7 @@ namespace Asgard.Client
                 else
                     Y = 0;
 
-                dObj.position_error = new Farseer.Framework.Vector2(X, Y);
+                dObj.position_error = new Vector2(X, Y);
             }
 
         }
@@ -155,6 +194,67 @@ namespace Asgard.Client
             }
            
         }
+
+        private void ApplyLagComp()
+        {
+            var thisPlayer = GetPlayer();
+            if (thisPlayer == null) return;
+
+            var netSync = thisPlayer.GetComponent<NetPhysicsObject>();
+            if (netSync == null) return;
+
+            Asgard.Core.Collections.LinkedListNode<PlayerStateData> found_node = null;
+            foreach (var node in _moveBuffer)
+            {
+                if (node.Value.SimTick.Value == netSync.SimTick.Value)
+                {
+                    found_node = node;
+                    break;
+                }
+            }
+
+            if (found_node != null)
+            {
+                var moveData = found_node.Value;
+
+                var diff = netSync.Position.Value - moveData.Position.Value;
+
+                if (diff.LengthSquared() > 0)
+                {
+                    var node = found_node;
+                    Vector2 pos = netSync.Position;
+
+                    Vector2 prev_pos = node.Value.Position;
+                    while (node != null)
+                    {
+                        var move = node.Value;
+                        Vector2 velStep = move.Position - prev_pos;
+
+
+                        pos += velStep;
+                        prev_pos = move.Position;
+                        node = node.Next;
+                        move.Position = pos;
+                    }
+
+                    var pComp = thisPlayer.GetComponent<Physics2dComponent>();
+                    if (pComp == null || pComp.Body == null) return;
+
+                    var playerComponent = thisPlayer.GetComponent<PlayerComponent>();
+                    playerComponent.LerpToReal = true;
+                    playerComponent.OldPosition = pComp.Body.Position;
+                    playerComponent.LerpStart = NetTime.RealTime;
+                    playerComponent.LerpEnd = playerComponent.LerpStart + (0.1f);
+                    pComp.Body.Position = pos;
+                }
+
+
+                _moveBuffer.TruncateTo(found_node.Next);
+            }
+
+
+        }
+
 
         private void MergeJitterBuffer()
         {
@@ -225,6 +325,11 @@ namespace Asgard.Client
             }     
         }
 
+        protected void AddClientState(PlayerStateData state)
+        {
+            _stateList.Add(state);
+            _moveBuffer.AddToTail(state);
+        }
         private void SendClientState()
         {
             if (GetServerNode() == null) return;
@@ -241,7 +346,12 @@ namespace Asgard.Client
         }
 
         private PlayerStateData _lastClientState = null;
-        protected abstract List<PlayerStateData> GetClientState();
+        private List<PlayerStateData> GetClientState()
+        {
+            var states = new List<PlayerStateData>(_stateList);
+            _stateList.Clear();
+            return states;
+        }
 
         protected abstract Entity GetPlayer();
     }

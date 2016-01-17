@@ -51,8 +51,24 @@ namespace Asgard
             _bifrost = new BifrostServer(_netConfig.Port, _netConfig.MaxConnections);
             AddInternalSystem(_bifrost, 0);
             PacketFactory.AddCallback<AckStatePacket>(OnAckState);
+            PacketFactory.AddCallback<ClientStatePacket>(OnClientState);
 
+        }
 
+        private void OnClientState(ClientStatePacket clientState)
+        {
+            var playerSys = LookupSystem<PlayerSystem>();
+
+            var conn = clientState.Connection;
+            var player = playerSys.Get(conn);
+            if (player == null) return;
+
+            var playerComp = player.GetComponent<PlayerComponent>();
+
+            foreach (var inp in clientState.State)
+            {
+                playerComp.InputBuffer.Add(inp);
+            }
         }
 
         private void OnAckState(AckStatePacket obj)
@@ -109,6 +125,16 @@ namespace Asgard
             
         }
 
+        protected override void BeforePhysics(float delta)
+        {
+            var ents = EntityManager.GetEntities(Aspect.All(typeof(PlayerComponent)));
+            foreach(var e in ents)
+            {
+                var playerComp = e.GetComponent<PlayerComponent>();
+                playerComp.GetNextState();
+            }
+        }
+
         protected override void AfterPhysics(float delta)
         {
             var world = LookupSystem<Midgard>();
@@ -131,6 +157,13 @@ namespace Asgard
                         netSnycObj.LinearVelocity = body.LinearVelocity;
                         netSnycObj.SimTick = simTick;
                     }
+
+                    var playerComp = entity.GetComponent<PlayerComponent>();
+                    if (playerComp != null)
+                    {
+                        playerComp.RenderPosition = body.Position;
+                    }
+
                 }
             }
         }

@@ -34,7 +34,6 @@ namespace Mono_Server
             _bifrost = LookupSystem<BifrostServer>();
 
             PacketFactory.AddCallback<MonoLoginPacket>(OnLogin);
-            PacketFactory.AddCallback<ClientStatePacket>(OnClientState);
 
             _bifrost.OnDisconnect += _bifrost_OnDisconnect;
 
@@ -53,21 +52,6 @@ namespace Mono_Server
                 _playerSys.Remove(player);
             }
         }
-
-        private void OnClientState(ClientStatePacket clientState)
-        {
-            var conn = clientState.Connection;
-            var player = _playerSys.Get(conn);
-            if (player == null) return;
-
-            var playerComp = player.GetComponent<PlayerComponent>();
-
-            foreach (var inp in clientState.State)
-            {
-                playerComp.InputBuffer.Add(inp);
-            }
-        }
-
 
         Random rng = new Random();
 
@@ -115,7 +99,7 @@ namespace Mono_Server
             {
                 var playerComp = player.GetComponent<PlayerComponent>();
                 var renderData = player.GetComponent<RenderData>();
-                PlayerState state = playerComp.GetNextState() as PlayerState;
+                PlayerState state = playerComp.CurrentState as PlayerState;
                 if (state == null) continue;
 
                 var phyComp = player.GetComponent<Physics2dComponent>();
@@ -147,22 +131,6 @@ namespace Mono_Server
                     }
                 }
 
-            }
-        }
-
-        protected override void AfterPhysics(float delta)
-        {
-            base.AfterPhysics(delta);
-
-            var playerEnts = EntityManager.GetEntities(Aspect.All(typeof(PlayerComponent), typeof(Physics2dComponent),
-                typeof(RenderData)));
-            foreach (var player in playerEnts)
-            {
-                var phyComp = player.GetComponent<Physics2dComponent>();
-                var pComp = player.GetComponent<PlayerComponent>();
-
-                if (phyComp.Body == null) continue;
-                pComp.RenderPosition = phyComp.Body.Position;
             }
         }
 

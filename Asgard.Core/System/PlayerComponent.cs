@@ -72,7 +72,7 @@ namespace Asgard.EntitySystems.Components
             _accumBuffer = new Dictionary<Entity, int>();
         }
 
-        public PlayerStateData GetNextState()
+        internal PlayerStateData GetNextState()
         {
             var states = InputBuffer.Get();
             if (states != null)
