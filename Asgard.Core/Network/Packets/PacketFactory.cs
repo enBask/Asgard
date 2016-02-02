@@ -29,6 +29,9 @@ namespace Asgard.Core.Network.Packets
         private static ConcurrentDictionary<ushort, List<Action<Packet>>> _PacketCallback =
             new ConcurrentDictionary<ushort, List<Action<Packet>>>();
 
+        private static ConcurrentDictionary<int, Action<Packet>> _PacketWrapperLookup =
+            new ConcurrentDictionary<int, Action<Packet>>();
+
   
         public static void AddPacketType<T>(ushort packetId, NetDeliveryMethod method)
         {
@@ -95,6 +98,8 @@ namespace Asgard.Core.Network.Packets
                 callback(p as T);
             };
 
+            _PacketWrapperLookup[callback.GetHashCode()] = action;
+
             List<Action<Packet>> callbackList = new List<Action<Packet>>();
             callbackList.Add(action);
 
@@ -104,6 +109,23 @@ namespace Asgard.Core.Network.Packets
                 pList.Add(action);
                 return pList;
             });
+        }
+
+        public static void RemoveCallback<T>(Action<T> callback)
+        {
+            Action<Packet> actionWrapper = null;
+            _PacketWrapperLookup.TryGetValue(callback.GetHashCode(), out actionWrapper);
+
+            if (actionWrapper != null)
+            {
+                var packetId = GetPacketId<T>();
+                List<Action<Packet>> callbackList = new List<Action<Packet>>();
+                if (_PacketCallback.TryGetValue(packetId, out callbackList))
+                {
+                    callbackList.Remove(actionWrapper);
+                }
+                _PacketWrapperLookup.TryRemove(callback.GetHashCode(), out actionWrapper);
+            }
         }
 
         public static void RaiseCallbacks(Packet packet)

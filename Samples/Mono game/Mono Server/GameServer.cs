@@ -29,9 +29,8 @@ namespace Mono_Server
         public GameServer(MonoServer renderServer)
         {
             _monoServer = renderServer;
-            _playerSys = new PlayerSystem();
-            AddEntitySystem(_playerSys);
             _bifrost = LookupSystem<BifrostServer>();
+            _playerSys = LookupSystem<PlayerSystem>();
 
             PacketFactory.AddCallback<MonoLoginPacket>(OnLogin);
 
@@ -88,8 +87,6 @@ namespace Mono_Server
             LoginResponsePacket packet = new LoginResponsePacket();
             packet.OwnerEntityId = (uint)entity.UniqueId;
             _bifrost.Send(packet, obj.Connection);
-
-            renderData.CallRPCTest("this is a RPC", new Farseer.Framework.Vector2(10,15), obj.Connection);
         }
 
         protected override void BeforePhysics(float delta)

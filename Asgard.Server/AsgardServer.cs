@@ -55,6 +55,9 @@ namespace Asgard
             PacketFactory.AddCallback<AckStatePacket>(OnAckState);
             PacketFactory.AddCallback<ClientStatePacket>(OnClientState);
 
+            PlayerSystem ps = new PlayerSystem();
+            AddEntitySystem(ps);
+
         }
 
         private void OnClientState(ClientStatePacket clientState)

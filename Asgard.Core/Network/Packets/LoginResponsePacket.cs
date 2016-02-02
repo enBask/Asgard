@@ -10,15 +10,18 @@ namespace Asgard.Core.Network.Packets
     public class LoginResponsePacket : Packet
     {
         public uint OwnerEntityId { get; set; }
+        public bool Success { get; set; }
 
         public override void Deserialize(Bitstream msg)
         {
             OwnerEntityId = msg.ReadUInt32();
+            Success = msg.ReadBool();
         }
 
         public override void Serialize(Bitstream msg)
         {
             msg.Write(OwnerEntityId);
+            msg.Write(Success);
         }
     }
 }
