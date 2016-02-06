@@ -120,6 +120,16 @@ namespace Asgard
                 Peer.FlushSendQueue();
         }
 
+        public int ConnectionStatus()
+        {
+            var s = _clientInstance.ConnectionStatus;
+            if (s == NetConnectionStatus.Connected)
+                return 1;
+            else if (s == NetConnectionStatus.Disconnected || s == NetConnectionStatus.Disconnecting)
+                return 0;
+            else
+                return 2;
+        }
 
         public float GetPingTime()
         {
@@ -194,10 +204,16 @@ namespace Asgard
             return;
         }
 
-        public void Send(Packet packet, int channel = 0)
+        public bool Send(Packet packet, int channel = 0)
         {
             var conn = _clientInstance.ServerConnection;
-            Send(packet, (NetNode)conn, channel);
+
+            if (conn == null)
+            {
+                return false;
+            }
+
+            return Send(packet, (NetNode)conn, channel);
         }
 
         #region Connection setup
@@ -212,11 +228,6 @@ namespace Asgard
             {
                 _clientInstance.Start();
                 _clientInstance.Connect(_endPoint);
-
-//                 _networkThread = new Thread(_networkThreadFunc);
-//                 _networkThread.IsBackground = true;
-//                 _networkThread.Start();
-
                 _running = true;
             }
             catch
