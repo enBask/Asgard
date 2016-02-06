@@ -189,6 +189,7 @@ namespace Asgard.Client
 
                         pComp.Body.Position = dObj.Position;
                         pComp.Body.LinearVelocity = dObj.LinearVelocity;
+                        pComp.Body.Rotation = dObj.Rotation;
                     }
 
                     dObj.IsUpdated = false;

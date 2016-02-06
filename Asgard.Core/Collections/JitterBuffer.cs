@@ -19,6 +19,8 @@ namespace Asgard.Core.Collections
         float _startTime = 0f;
         float _tickRate;
 
+        public int Id { get; set; }
+
         public JitterBuffer(float tickRate)
         {
             _tickRate = tickRate;
@@ -28,7 +30,7 @@ namespace Asgard.Core.Collections
         public void Add(T data)
         {
             _buffer.Enqueue(data);
-            if (_buffer.Count > _tickRate * 1 )
+            if (_buffer.Count > _tickRate * 1.5 )
             {
                 _buffer.Dequeue();
             }
@@ -42,6 +44,7 @@ namespace Asgard.Core.Collections
 
         public T Get()
         {
+
             if (!started) return null;
 
             var diff = NetTime.RealTime - _startTime;

@@ -68,7 +68,7 @@ namespace Mono_Server
         /// </summary>
         protected override void LoadContent()
         {
-
+            IsFixedTimeStep = true;
             _gameServer = new GameServer(this);
             _gameServer.Start();
 

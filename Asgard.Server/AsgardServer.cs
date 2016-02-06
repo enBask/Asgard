@@ -160,6 +160,7 @@ namespace Asgard
                         }
                         netSnycObj.Position = body.Position;
                         netSnycObj.LinearVelocity = body.LinearVelocity;
+                        netSnycObj.Rotation = body.Rotation;
                         netSnycObj.SimTick = simTick;
                     }
 

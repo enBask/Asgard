@@ -67,6 +67,7 @@ namespace Asgard.EntitySystems.Components
         {
             NetworkNode = networkNode;
             InputBuffer = new JitterBuffer<PlayerStateData>(30);
+            InputBuffer.Id = 1;
             _knownObjects = new Dictionary<NetworkObject, uint>();
             _deltaBuffer = new Dictionary<int, DeltaList>();
             _accumBuffer = new Dictionary<Entity, int>();
