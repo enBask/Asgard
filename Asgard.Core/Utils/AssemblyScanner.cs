@@ -18,35 +18,61 @@ namespace Asgard.Core.Utils
             var ignoredAssemblies =
             attributeType.Assembly.GetReferencedAssemblies();
 
-            List<Assembly> _loadedList = new List<Assembly>();
-            ScanAssembly<T>(Assembly.GetEntryAssembly(), _loadedList, runner, checkFunc);
+            List<string> _loadedList = new List<string>(ignoredAssemblies.Select(a=>a.FullName));
+            ScanAssembly<T>(Assembly.GetEntryAssembly().FullName, _loadedList, runner, checkFunc);
         }
 
-        private static void ScanAssembly<T>(Assembly assembly, List<Assembly> loadedList, Action<TypeInfo> runner, Func<TypeInfo, bool> checkFunc)
+        private static void ScanAssembly<T>(string assemblyName, List<string> loadedList, Action<TypeInfo> runner, Func<TypeInfo, bool> checkFunc)
             where T : class
         {
-            if (loadedList.Contains(assembly))
+            if (loadedList.Contains(assemblyName))
                 return;
 
-            loadedList.Add(assembly);
-            foreach (var type in assembly.DefinedTypes)
+            if (assemblyName.StartsWith("System."))
+                return;
+
+            if (assemblyName.StartsWith("Windows"))
+                return;
+
+            if (assemblyName.StartsWith("mscorlib"))
+                return;
+
+
+            loadedList.Add(assemblyName);
+            var assembly = Assembly.Load(assemblyName);
+            try
             {
-                if (checkFunc == null)
+                foreach (var type in assembly.DefinedTypes)
                 {
-                    runner(type);
-                }
-                else
-                {
-                    if (checkFunc(type))
+                    if (checkFunc == null)
                     {
                         runner(type);
                     }
+                    else
+                    {
+                        if (checkFunc(type))
+                        {
+                            runner(type);
+                        }
+                    }
                 }
             }
+            catch
+            {
+                //swallow type load exceptions so the system can still start.
+            }
 
+            var lst = assembly.GetReferencedAssemblies();
             foreach (var refAssembly in assembly.GetReferencedAssemblies())
             {
-                ScanAssembly<T>(Assembly.Load(refAssembly), loadedList, runner, checkFunc);
+                try
+                {
+                    ScanAssembly<T>(refAssembly.FullName, loadedList, runner, checkFunc);
+                }
+                catch (TypeLoadException)
+                {
+                    //swallow type load exceptions so the system can still start.
+                }
             }
         }
     }
