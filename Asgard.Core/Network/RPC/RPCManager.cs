@@ -53,7 +53,7 @@ namespace Asgard.Core.Network.RPC
             _connection.Send(packet, node, 10);
         }
 
-        public static void Call<T>(string name, T p1, Entity entity = null, NetNode node =null)
+        public static void Call<T>(string name, Entity entity, T p1, NetNode node=null)
         {
             if (node == null)
             {
@@ -67,7 +67,7 @@ namespace Asgard.Core.Network.RPC
             packet.Parameters.Add(p1);
             _connection.Send(packet, node, 10);
         }
-        public static void Call<T1, T2>(string name, T1 p1, T2 p2, Entity entity = null, NetNode node = null)
+        public static void Call<T1, T2>(string name, Entity entity, T1 p1, T2 p2, NetNode node = null)
         {
             if (node == null)
             {
@@ -82,7 +82,7 @@ namespace Asgard.Core.Network.RPC
             packet.Parameters.Add(p2);
             _connection.Send(packet, node, 10);
         }
-        public static void Call<T1, T2, T3>(string name, T1 p1, T2 p2, T3 p3, Entity entity = null, NetNode node = null)
+        public static void Call<T1, T2, T3>(string name, Entity entity, T1 p1, T2 p2, T3 p3, NetNode node = null)
         {
             if (node == null)
             {
@@ -98,7 +98,7 @@ namespace Asgard.Core.Network.RPC
             packet.Parameters.Add(p3);
             _connection.Send(packet, node, 10);
         }
-        public static void Call<T1, T2, T3, T4>(string name, T1 p1, T2 p2, T3 p3, T4 p4, Entity entity = null, NetNode node = null)
+        public static void Call<T1, T2, T3, T4>(string name, Entity entity, T1 p1, T2 p2, T3 p3, T4 p4, NetNode node = null)
         {
             if (node == null)
             {
@@ -165,7 +165,7 @@ namespace Asgard.Core.Network.RPC
 
             Action<T1, NetNode> wrapper = new Action<T1,NetNode>( (p1, n) =>
             {
-                Call(name, p1, entity, n);
+                Call(name, entity, p1, n);
             });
 
             return wrapper;
@@ -194,7 +194,7 @@ namespace Asgard.Core.Network.RPC
 
             Action<T1, T2, NetNode> wrapper = new Action<T1, T2, NetNode>((p1, p2, n) =>
             {
-                Call(name, p1, p2, entity, n);
+                Call(name, entity, p1, p2, n);
             });
 
             return wrapper;
@@ -224,7 +224,7 @@ namespace Asgard.Core.Network.RPC
 
             Action<T1, T2, T3, NetNode> wrapper = new Action<T1, T2, T3, NetNode>((p1, p2, p3, n) =>
             {
-                Call(name, p1, p2, p3, entity, n);
+                Call(name, entity, p1, p2, p3, n);
             });
 
             return wrapper;
@@ -255,7 +255,7 @@ namespace Asgard.Core.Network.RPC
 
             Action<T1, T2, T3, T4, NetNode> wrapper = new Action<T1, T2, T3, T4, NetNode>((p1, p2, p3, p4, n) =>
             {
-                Call(name, p1, p2, p3, p4, entity, n);
+                Call(name, entity, p1, p2, p3, p4, n);
             });
 
             return wrapper;

@@ -151,7 +151,6 @@ namespace Asgard
                     var netSnycObj = entity.GetComponent<NetPhysicsObject>();
                     if (netSnycObj != null)
                     {
-
                         uint simTick = NetTime.SimTick;
                         var playerObj = entity.GetComponent<PlayerComponent>();
                         if (playerObj != null && playerObj.CurrentState != null)

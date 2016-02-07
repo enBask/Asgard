@@ -49,7 +49,7 @@ namespace Asgard.Client
 
             float delay_amount = (float)Math.Round((1f / _netConfig.Tickrate) * 6f, 2);
 
-            _jitterBuffer = new JitterBuffer<List<Tuple<Entity, NetworkObject>>>(_netConfig.Tickrate);
+            _jitterBuffer = new JitterBuffer<List<Tuple<Entity, NetworkObject>>>(_netConfig.Tickrate / 5);
             _stateList = new List<PlayerStateData>();
             _moveBuffer = new Core.Collections.LinkedList<PlayerStateData>();
 
@@ -204,7 +204,6 @@ namespace Asgard.Client
                 {
                     if (!dObj.PlayerControlled)
                     {
-//                        Trace.WriteLine("new rot => " + dObj.Rotation);
                         dObj.position_error = (pComp.Body.Position + dObj.position_error) - dObj.Position;
                         dObj.rotation_error = pComp.Body.Rotation;
                         if (dObj.position_error.LengthSquared() > 5f)
