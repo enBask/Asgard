@@ -15,10 +15,12 @@ namespace Asgard.Core.Network.Packets
     {
         public string Name { get; set; }
         public List<object> Parameters { get; set; }
+        public uint EntityId { get; set; }
 
         public override void Deserialize(Bitstream msg)
         {
             Name = msg.ReadString();
+            EntityId = msg.ReadVariableUInt32();
             int count = msg.ReadInt32();
             Parameters = new List<object>(count);
             for(int i=0; i < count; ++i)
@@ -27,12 +29,13 @@ namespace Asgard.Core.Network.Packets
                 Parameters.Add(p);
             }
 
-            RPCManager.Call(Name, Parameters);
+            RPCManager._Call(Name, EntityId, Parameters);
         }
 
         public override void Serialize(Bitstream msg)
         {
             msg.Write(Name);
+            msg.WriteVariableUInt32(EntityId);
             msg.Write(Parameters.Count);
             foreach (var p in Parameters)
             {

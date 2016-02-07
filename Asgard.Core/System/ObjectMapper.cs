@@ -73,6 +73,7 @@ namespace Asgard.Core.System
             if (obj is DefinitionNetworkObject)
             {
                 var entity = _manager.GetEntityByUniqueId(entityId);
+                (obj as DefinitionNetworkObject).Owned = false;
                 (obj as DefinitionNetworkObject).OnCreated(_instance, entity);
             }
         }
@@ -148,6 +149,7 @@ namespace Asgard.Core.System
                 var compType = ComponentTypeManager.GetTypeFor(type);
                 if (entity.GetComponent(compType) == null)
                 {
+                    comp.Owner = entity;
                     entity.AddComponent(comp as IComponent);
                 }
 

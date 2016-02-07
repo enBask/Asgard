@@ -168,6 +168,7 @@ namespace Asgard
                     if (playerComp != null)
                     {
                         playerComp.RenderPosition = body.Position;
+                        playerComp.RenderRotation = body.Rotation;
                     }
 
                 }
@@ -229,7 +230,7 @@ namespace Asgard
                 }
 
                 #region StateSync
-                var syncEntityList = playerComp.GetTrackedEntitiesByScore();
+                var syncEntityList = playerComp.GetTrackedEntitiesByScore(10);
                 foreach (var nobj in syncEntityList)
                 {
                     var objList = ObjectMapper.GetNetObjects(nobj, typeof(StateSyncNetworkObject));

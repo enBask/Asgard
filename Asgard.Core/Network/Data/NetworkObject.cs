@@ -16,6 +16,8 @@ namespace Asgard.Core.Network.Data
         private bool _owned = false;
         private int _channel = 0;
 
+        public Entity Owner { get; set; }
+
         public NetworkObject()
         {
         }
@@ -74,9 +76,11 @@ namespace Asgard.Core.Network.Data
     public class DefinitionNetworkObject: NetworkObject
     {
         internal bool Destroy { get; set; }
+        public bool Owned { get; set; }
 
         public DefinitionNetworkObject() : base()
         {
+            Owned = true;
         }
 
         public DefinitionNetworkObject(int channel) : base(channel)
@@ -86,7 +90,6 @@ namespace Asgard.Core.Network.Data
 
         public virtual void OnCreated(AsgardBase instance, Entity entity)
         {
-
         }
 
         public virtual void OnDestroyed(AsgardBase instance, Entity entity, bool destroyEntity=true)

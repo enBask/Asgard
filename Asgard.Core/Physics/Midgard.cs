@@ -54,6 +54,7 @@ namespace Asgard.Core.Physics
             if (comp != null && comp.Body != null)
             {
                 _queueDeleteList.Add(comp.Body);
+                comp.Body = null;
             }
         }
 

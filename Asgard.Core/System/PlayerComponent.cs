@@ -56,6 +56,7 @@ namespace Asgard.EntitySystems.Components
         public PlayerStateData LastSyncState { get; set; }
         public Vector2 OldPosition { get; set; }
         public Vector2 RenderPosition { get; set; }
+        public float RenderRotation { get; set; }
         public bool LerpToReal { get; set; }
         public float LerpStart { get; set; }
         public float LerpEnd { get; set; }
@@ -207,23 +208,39 @@ namespace Asgard.EntitySystems.Components
                 .ToList();
 
             foreach (var e in list)
-                _accumBuffer.Remove(e);
-
+            {
+                _accumBuffer[e] = 0;
+            }
             return list;
         }
 
         internal int calcStateScore(Entity e)
         {
             var playerComp = e.GetComponent<PlayerComponent>();
-            if (playerComp == this)
-                return 100000; //high pri ourselves to always sync.
+            if (playerComp != null)
+                return 20; //high pri ourselves to always sync.
+
+            var inList = _accumBuffer.ContainsKey(e);
+
+            if (!inList)
+            {
+                return 50;
+            }
 
             var phyComp = e.GetComponent<Physics2dComponent>();
             if (phyComp != null && phyComp.Body != null)
             {
                 var lvel = phyComp.Body.LinearVelocity;
+
+                if (phyComp.PreviousLinaryVelocity == Vector2.Zero)
+                {
+                    phyComp.PreviousLinaryVelocity = phyComp.Body.LinearVelocity;
+                    return 2;
+                }
+
+                phyComp.PreviousLinaryVelocity = phyComp.Body.LinearVelocity;
                 if (lvel.LengthSquared() >= 0.0001f)
-                    return 10; // moving objects get a pri boost
+                    return 1; // moving objects get a pri boost
             }
 
             return 1; // default to a very small pri boost to pop above dead objects.

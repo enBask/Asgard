@@ -16,6 +16,7 @@ using Asgard.EntitySystems.Components;
 using Farseer.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -126,6 +127,7 @@ namespace Asgard.Client
                 playerComp.LerpToReal = false;
                 playerComp.OldPosition = phyComp.Body.Position;
                 playerComp.RenderPosition = phyComp.Body.Position;
+                playerComp.RenderRotation = phyComp.Body.Rotation;
             }
             #endregion
 
@@ -160,6 +162,28 @@ namespace Asgard.Client
                 else
                     Y = 0;
 
+                var phyComp = ent.GetComponent<Physics2dComponent>();
+                if (phyComp != null && phyComp.Body != null)
+                {
+                    float d = dObj.rotation_slerp - phyComp.Body.Rotation;
+
+
+                    if (!dObj.PlayerControlled && Math.Abs(d) >= 0.01f)
+                    {
+                        dObj.rotation_slerp = phyComp.Body.Rotation;
+                        //                    dObj.rotation_slerp = MathHelper.Lerp(dObj.rotation_slerp, phyComp.Body.Rotation, 0.2f);
+                        //                     System.Diagnostics.Trace.WriteLine("slerp => " + dObj.rotation_slerp + " " 
+                        //                         + dObj.rotation_error + " " + phyComp.Body.Rotation);
+                        //dObj.rotation_error = dObj.rotation_slerp;
+                    }
+                    else if (!dObj.PlayerControlled)
+                    {
+                        //                    System.Diagnostics.Trace.WriteLine("break out => " + phyComp.Body.Rotation);
+                        dObj.rotation_slerp = phyComp.Body.Rotation;
+                    }
+                }
+
+
                 dObj.position_error = new Vector2(X, Y);
             }
 
@@ -180,8 +204,9 @@ namespace Asgard.Client
                 {
                     if (!dObj.PlayerControlled)
                     {
+//                        Trace.WriteLine("new rot => " + dObj.Rotation);
                         dObj.position_error = (pComp.Body.Position + dObj.position_error) - dObj.Position;
-                       
+                        dObj.rotation_error = pComp.Body.Rotation;
                         if (dObj.position_error.LengthSquared() > 5f)
                         {
                             dObj.position_error = Farseer.Framework.Vector2.Zero;
@@ -316,6 +341,7 @@ namespace Asgard.Client
                     var objA =  entity.GetComponent(compType); 
                     if (objA == null)
                     {
+                        objB.Owner = entity;
                         entity.AddComponent(objB as IComponent);
                     }
                     else

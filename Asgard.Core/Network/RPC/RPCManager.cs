@@ -1,4 +1,5 @@
-﻿using Asgard.Core.Network.Packets;
+﻿using Artemis;
+using Asgard.Core.Network.Packets;
 using Lidgren.Network;
 using System;
 using System.Collections.Generic;
@@ -10,12 +11,13 @@ namespace Asgard.Core.Network.RPC
 {
     public static class RPCManager
     {
-        static Dictionary<string, Action<List<object>>> _rpcLookup;
+        
+        static Dictionary<string, Dictionary<long, Action<List<object>>>> _rpcLookup;
 
         static Connection _connection;
         static RPCManager()
         {
-            _rpcLookup = new Dictionary<string, Action<List<object>>>();
+            _rpcLookup = new Dictionary<string, Dictionary<long, Action<List<object>>>>();
         }
 
         public static void SetConnection(Connection conn)
@@ -23,47 +25,90 @@ namespace Asgard.Core.Network.RPC
             _connection = conn;
         }
 
-        internal static void Call(string name, List<object> parms)
+        internal static void _Call(string name, long entityId, List<object> parms)
         {
+            Dictionary<long, Action<List<object>>> routes = null;
             Action<List<object>> callback = null;
-            if (_rpcLookup.TryGetValue(name, out callback))
+            if (_rpcLookup.TryGetValue(name, out routes))
             {
-                callback(parms);
+                if (routes.TryGetValue(entityId, out callback))
+                {
+                    callback(parms);
+                }
             }
         }
 
         #region Call methods
-        public static void Call<T>(string name, NetNode node, T p1)
+        public static void CallSingle(string name, Entity entity = null, NetNode node = null)
         {
+            if (node == null)
+            {
+                node = (NetNode)_connection.Peer.Connections[0];
+            }
+
             RPCPacket packet = new RPCPacket();
             packet.Name = name;
+            packet.EntityId = entity != null ? (uint)entity.UniqueId : 0 ;
+            packet.Parameters = new List<object>();
+            _connection.Send(packet, node, 10);
+        }
+
+        public static void Call<T>(string name, T p1, Entity entity = null, NetNode node =null)
+        {
+            if (node == null)
+            {
+                node = (NetNode)_connection.Peer.Connections[0];
+            }
+
+            RPCPacket packet = new RPCPacket();
+            packet.Name = name;
+            packet.EntityId = entity != null ? (uint)entity.UniqueId : 0;
             packet.Parameters = new List<object>();
             packet.Parameters.Add(p1);
             _connection.Send(packet, node, 10);
         }
-        public static void Call<T1, T2>(string name, NetNode node, T1 p1, T2 p2)
+        public static void Call<T1, T2>(string name, T1 p1, T2 p2, Entity entity = null, NetNode node = null)
         {
+            if (node == null)
+            {
+                node = (NetNode)_connection.Peer.Connections[0];
+            }
+
             RPCPacket packet = new RPCPacket();
             packet.Name = name;
+            packet.EntityId = entity != null ? (uint)entity.UniqueId : 0;
             packet.Parameters = new List<object>();
             packet.Parameters.Add(p1);
             packet.Parameters.Add(p2);
             _connection.Send(packet, node, 10);
         }
-        public static void Call<T1, T2, T3>(string name, NetNode node, T1 p1, T2 p2, T3 p3)
+        public static void Call<T1, T2, T3>(string name, T1 p1, T2 p2, T3 p3, Entity entity = null, NetNode node = null)
         {
+            if (node == null)
+            {
+                node = (NetNode)_connection.Peer.Connections[0];
+            }
+
             RPCPacket packet = new RPCPacket();
             packet.Name = name;
+            packet.EntityId = entity != null ? (uint)entity.UniqueId : 0;
             packet.Parameters = new List<object>();
             packet.Parameters.Add(p1);
             packet.Parameters.Add(p2);
             packet.Parameters.Add(p3);
             _connection.Send(packet, node, 10);
         }
-        public static void Call<T1, T2, T3, T4>(string name, NetNode node, T1 p1, T2 p2, T3 p3, T4 p4)
+        public static void Call<T1, T2, T3, T4>(string name, T1 p1, T2 p2, T3 p3, T4 p4, Entity entity = null, NetNode node = null)
         {
+            if (node == null)
+            {
+                node = (NetNode)_connection.Peer.Connections[0];
+            }
+
+
             RPCPacket packet = new RPCPacket();
             packet.Name = name;
+            packet.EntityId = entity != null ? (uint)entity.UniqueId : 0;
             packet.Parameters = new List<object>();
             packet.Parameters.Add(p1);
             packet.Parameters.Add(p2);
@@ -74,24 +119,59 @@ namespace Asgard.Core.Network.RPC
         #endregion
 
         #region Register Methods
-        public static Action<T1, NetNode> Register<T1>(string name, Action<T1> callOut)
+        public static Action<NetNode> Register(string name, Entity entity, Action callOut)
+        {
+            Action<List<object>> callback = new Action<List<object>>(lst =>
+            {
+                callOut();
+            });
+
+            long eid = 0;
+            if (entity != null)
+                eid = entity.UniqueId;
+
+            Dictionary<long, Action<List<object>>> routes;
+            if (!_rpcLookup.TryGetValue(name, out routes))
+            {
+                _rpcLookup[name] = routes = new Dictionary<long, Action<List<object>>>();
+            }
+            routes[eid] = callback;
+
+            Action<NetNode> wrapper = new Action<NetNode>((n) =>
+            {
+                Call(name, entity, n);
+            });
+
+            return wrapper;
+        }
+
+        public static Action<T1, NetNode> Register<T1>(string name, Entity entity, Action<T1> callOut)
         {
             Action<List<object>> callback = new Action<List<object>>(lst =>
             {
                 callOut((T1)lst[0]);
             });
 
-            _rpcLookup[name] = callback;
+            long eid = 0;
+            if (entity != null)
+                eid = entity.UniqueId;
+
+            Dictionary<long, Action<List<object>>> routes;
+            if (!_rpcLookup.TryGetValue(name, out routes))
+            {
+                _rpcLookup[name] = routes = new Dictionary<long, Action<List<object>>>();
+            }
+            routes[eid] = callback;
 
             Action<T1, NetNode> wrapper = new Action<T1,NetNode>( (p1, n) =>
             {
-                Call(name, n, p1);
+                Call(name, p1, entity, n);
             });
 
             return wrapper;
         }
 
-        public static Action<T1, T2, NetNode> Register<T1,T2>(string name, Action<T1,T2> callOut)
+        public static Action<T1, T2, NetNode> Register<T1,T2>(string name, Entity entity, Action<T1,T2> callOut)
         {
             Action<List<object>> callback = new Action<List<object>>(lst =>
             {
@@ -101,17 +181,26 @@ namespace Asgard.Core.Network.RPC
                     );
             });
 
-            _rpcLookup[name] = callback;
+            long eid = 0;
+            if (entity != null)
+                eid = entity.UniqueId;
+
+            Dictionary<long, Action<List<object>>> routes;
+            if (!_rpcLookup.TryGetValue(name, out routes))
+            {
+                _rpcLookup[name] = routes = new Dictionary<long, Action<List<object>>>();
+            }
+            routes[eid] = callback;
 
             Action<T1, T2, NetNode> wrapper = new Action<T1, T2, NetNode>((p1, p2, n) =>
             {
-                Call(name, n, p1, p2);
+                Call(name, p1, p2, entity, n);
             });
 
             return wrapper;
         }
 
-        public static Action<T1, T2,T3, NetNode> Register<T1,T2,T3>(string name, Action<T1,T2,T3> callOut)
+        public static Action<T1, T2,T3, NetNode> Register<T1,T2,T3>(string name, Entity entity, Action<T1,T2,T3> callOut)
         {
             Action<List<object>> callback = new Action<List<object>>(lst =>
             {
@@ -122,17 +211,26 @@ namespace Asgard.Core.Network.RPC
                     );
             });
 
-            _rpcLookup[name] = callback;
+            long eid = 0;
+            if (entity != null)
+                eid = entity.UniqueId;
+
+            Dictionary<long, Action<List<object>>> routes;
+            if (!_rpcLookup.TryGetValue(name, out routes))
+            {
+                _rpcLookup[name] = routes = new Dictionary<long, Action<List<object>>>();
+            }
+            routes[eid] = callback;
 
             Action<T1, T2, T3, NetNode> wrapper = new Action<T1, T2, T3, NetNode>((p1, p2, p3, n) =>
             {
-                Call(name, n, p1, p2, p3);
+                Call(name, p1, p2, p3, entity, n);
             });
 
             return wrapper;
         }
 
-        public static Action<T1, T2, T3,T4, NetNode> Register<T1, T2, T3, T4>(string name, Action<T1, T2, T3, T4> callOut)
+        public static Action<T1, T2, T3,T4, NetNode> Register<T1, T2, T3, T4>(string name, Entity entity, Action<T1, T2, T3, T4> callOut)
         {
             Action<List<object>> callback = new Action<List<object>>(lst =>
             {
@@ -144,11 +242,20 @@ namespace Asgard.Core.Network.RPC
                     );
             });
 
-            _rpcLookup[name] = callback;
+            long eid = 0;
+            if (entity != null)
+                eid = entity.UniqueId;
+
+            Dictionary<long, Action<List<object>>> routes;
+            if (!_rpcLookup.TryGetValue(name, out routes))
+            {
+                _rpcLookup[name] = routes = new Dictionary<long, Action<List<object>>>();
+            }
+            routes[eid] = callback;
 
             Action<T1, T2, T3, T4, NetNode> wrapper = new Action<T1, T2, T3, T4, NetNode>((p1, p2, p3, p4, n) =>
             {
-                Call(name, n, p1, p2, p3, p4);
+                Call(name, p1, p2, p3, p4, entity, n);
             });
 
             return wrapper;

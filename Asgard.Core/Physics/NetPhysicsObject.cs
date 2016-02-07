@@ -32,6 +32,8 @@ namespace Asgard.Core.Physics
         }
 
         public Vector2 position_error { get; set; }
+        public float rotation_error { get; set; }
+        public float rotation_slerp { get; set; }
     }
 
 
